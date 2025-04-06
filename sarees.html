@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elegant Sarees - Shop Now</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hover-zoom {
+            transition: transform 0.3s ease;
+        }
+        .hover-zoom:hover {
+            transform: scale(1.05);
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .product-info {
+            padding: 15px;
+        }
+        .product-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .product-price {
+            color: #d40061;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .quantity-controls button {
+            background: none;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin: 0 5px;
+            border-radius: 4px;
+        }
+        .quantity-input {
+            width: 50px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .add-to-cart-btn {
+            background-color: #d40061;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .add-to-cart-btn:hover {
+            background-color: #b80054;
+        }
+        .mobile-menu-button {
+        display: none; /* Hidden by default on larger screens */
+    }
+    @media (max-width: 768px) {
+        .mobile-menu-button {
+            display: block;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: none; /* Hide links on smaller screens */
+            width: 100%;
+            position: absolute;
+            top: 60px; /* Adjust based on header height */
+            left: 0;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            z-index: 10;
+        }
+        .nav-links.open {
+            display: block;
+        }
+        .nav-links ul {
+            flex-direction: column;
+            align-items: start;
+        }
+        .nav-links ul li {
+            margin-bottom: 0.75rem;
+        }
+        .nav-links ul li a {
+            display: block;
+            padding: 0.5rem 0;
+        }
+    }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-white shadow-md sticky top-0 z-50">
+      <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="index.html" class="text-xl font-bold text-pink-600">ThreadElegance Store</a>
+            <button id="mobile-menu-button" class="mobile-menu-button focus:outline-none">
+                <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div class="nav-links">
+                <ul class="flex space-x-6">
+                    <li><a href="index.html" class="hover:text-pink-600 transition">Home</a></li>
+                    <li><a href="sarees.html" class="hover:text-pink-600 transition">Sarees</a></li>
+                    <li><a href="about.html" class="hover:text-pink-600 transition">About</a></li>
+                    <li><a href="contact.html" class="hover:text-pink-600 transition">Contact</a></li>
+                    <li>
+                        <a href="cart.html" class="hover:text-pink-600 transition relative">
+                            🛒 Cart
+                            <span id="cart-count" class="bg-red-500 text-white text-xs px-2 rounded-full absolute -top-2 -right-4">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    </header>
+
+    <section class="max-w-6xl mx-auto px-4 pt-8 pb-8">
+      <div id="filters" class="mb-10 p-4 border rounded-md bg-gray-50">
+          <h3 class="font-semibold mb-2">Filter by:</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                  <label class="block font-medium">Color</label>
+                  <select id="colorFilter" class="mt-1 p-2 border rounded w-full">
+                      <option value="">All</option>
+                      <option value="red">Red</option>
+                      <option value="green">Green</option>
+                      <option value="blue">Blue</option>
+                  </select>
+              </div>
+              <div>
+                  <label class="block font-medium">Price</label>
+                  <select id="priceFilter" class="mt-1 p-2 border rounded w-full">
+                      <option value="">All</option>
+                      <option value="under5k">Under ₹5000</option>
+                      <option value="5kto10k">₹5000 - ₹10000</option>
+                      <option value="over10k">Over ₹10000</option>
+                  </select>
+              </div>
+          </div>
+          <div class="mt-4 flex items-center space-x-2">
+              <button id="applyFiltersBtn" class="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-700 focus:outline-none focus:shadow-outline">Apply Filters</button>
+              <button id="resetFiltersBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 focus:outline-none focus:shadow-outline">Reset Filters</button>
+          </div>
+      </div>
+    </section>
+
+    <div class="max-w-7xl mx-auto py-10 px-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Our Exquisite Saree Collection</h2>
+        <div id="product-list" class="product-grid">
+        </div>
+    </div>
+
+    <footer class="bg-white shadow-md py-4 text-center text-gray-600">
+        <p>&copy; 2025 SareeStore. All rights reserved.</p>
+    </footer>
+
+    <script>
+      const colorFilter = document.getElementById('colorFilter');
+      const priceFilter = document.getElementById('priceFilter');
+      const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+      const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+      const productListDiv = document.getElementById('product-list');
+      const cartCountSpan = document.getElementById('cart-count');
+      let cart = getCart(); // Initialize cart from localStorage
+
+      // Sample product data (replace with your actual data source)
+      const productsData = [
+          { id: 1, name: 'Kanchipuram Silk Saree', price: 5500, image: 'images/Kanchipuram-Silk-Saree.jpg', color: 'red' },
+          { id: 2, name: 'Banarasi Georgette Saree', price: 8200, image: 'images/Banarasi-Georgette-Saree.jpg', color: 'red' },
+          { id: 3, name: 'Tussar Handloom Saree', price: 3800, image: 'images/Tussar-Handloom-Saree.jpg', color: 'blue' },
+          { id: 4, name: 'Georgette Embroidered Saree', price: 4200, image: 'images/georgette_embroidered.jpg', color: 'red' },
+          { id: 5, name: 'Tussar Silk Saree', price: 6100, image: 'images/tussar_silk.jpg', color: 'green' },
+          { id: 6, name: 'Crepe Printed Saree', price: 2900, image: 'images/crepe_printed.jpg', color: 'blue' },
+      ];
+
+      let filteredProducts = [...productsData]; // Start with all products
+
+      function applyFilters() {
+          const color = colorFilter.value;
+          const price = priceFilter.value;
+
+          filteredProducts = productsData.filter(product => {
+              let colorMatch = true;
+              let priceMatch = true;
+
+              if (color && product.color !== color) {
+                  colorMatch = false;
+              }
+
+              if (price) {
+                  if (price === 'under5k' && product.price >= 5000) priceMatch = false;
+                  if (price === '5kto10k' && (product.price < 5000 || product.price > 10000)) priceMatch = false;
+                  if (price === 'over10k' && product.price <= 10000) priceMatch = false;
+              }
+
+              return colorMatch && priceMatch;
+          });
+
+          renderProducts();
+      }
+
+      applyFiltersBtn.addEventListener('click', applyFilters);
+
+function resetFilters() {
+    colorFilter.value = '';
+    priceFilter.value = '';
+    filteredProducts = [...productsData];
+    renderProducts();
+}
+
+resetFiltersBtn.addEventListener('click', resetFilters);
+      function getCart() {
+          return JSON.parse(localStorage.getItem('cart')) || [];
+      }
+
+      function saveCart() {
+          localStorage.setItem('cart', JSON.stringify(cart));
+          updateCartCount();
+      }
+
+      function updateCartCount() {
+          cartCountSpan.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+      }
+
+      function renderProducts() {
+          productListDiv.innerHTML = '';
+          filteredProducts.forEach(product => {
+              const productCard = document.createElement('div');
+              productCard.classList.add('product-card', 'hover-zoom');
+              productCard.dataset.color = product.color; // Add color as data attribute (though not directly used in this render)
+              productCard.dataset.price = product.price; // Add price as data attribute (though not directly used in this render)
+              productCard.innerHTML = `
+                  <img src="${product.image}" alt="${product.name}">
+                  <div class="product-info">
+                      <h3 class="product-title">${product.name}</h3>
+                      <p class="product-price">₹${product.price}</p>
+                      <div class="quantity-controls">
+                          <button class="decrement-btn" data-product-id="${product.id}">-</button>
+                          <input type="number" class="quantity-input" id="qty-${product.id}" value="${getQuantityInCart(product.id)}" min="0">
+                          <button class="increment-btn" data-product-id="${product.id}">+</button>
+                      </div>
+                      <button class="add-to-cart-btn" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${product.image}">Add to Cart</button>
+                  </div>
+              `;
+              productListDiv.appendChild(productCard);
+          });
+
+          addQuantityButtonListeners();
+          addAddToCartListeners();
+      }
+
+      function getQuantityInCart(productId) {
+          const item = cart.find(item => item.id === productId);
+          return item ? item.quantity : 0;
+      }
+
+      function addQuantityButtonListeners() {
+          const incrementButtons = document.querySelectorAll('.increment-btn');
+          const decrementButtons = document.querySelectorAll('.decrement-btn');
+
+          incrementButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const productId = parseInt(this.dataset.productId);
+                  const quantityInput = document.getElementById(`qty-${productId}`);
+                  quantityInput.value = parseInt(quantityInput.value) + 1;
+                  updateCart(productId, parseInt(quantityInput.value));
+              });
+          });
+
+          decrementButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const productId = parseInt(this.dataset.productId);
+                  const quantityInput = document.getElementById(`qty-${productId}`);
+                  const currentValue = parseInt(quantityInput.value);
+                  if (currentValue > 0) {
+                      quantityInput.value = currentValue - 1;
+                      updateCart(productId, parseInt(quantityInput.value));
+                  }
+              });
+          });
+
+          const quantityInputs = document.querySelectorAll('.quantity-input');
+          quantityInputs.forEach(input => {
+              input.addEventListener('change', function() {
+                  const productId = parseInt(this.id.split('-')[1]);
+                  const newQuantity = parseInt(this.value);
+                  if (!isNaN(newQuantity) && newQuantity >= 0) {
+                      updateCart(productId, newQuantity);
+                  } else {
+                      this.value = getQuantityInCart(productId);
+                  }
+              });
+          });
+      }
+
+      function addAddToCartListeners() {
+          const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+          addToCartButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const productId = parseInt(this.dataset.productId);
+                  const productName = this.dataset.productName;
+                  const productPrice = parseFloat(this.dataset.productPrice);
+                  const productImage = this.dataset.productImage;
+                  const quantityInput = document.getElementById(`qty-${productId}`);
+                  const quantity = parseInt(quantityInput.value);
+
+                  if (quantity > 0) {
+                      const existingItemIndex = cart.findIndex(item => item.id === productId);
+                      if (existingItemIndex > -1) {
+                          cart[existingItemIndex].quantity = quantity;
+                      } else {
+                          cart.push({ id: productId, name: productName, price: productPrice, image: productImage, quantity: quantity });
+                      }
+                      saveCart();
+                      alert(`${quantity} x ${productName} added to cart!`);
+                  } else {
+                      alert(`Please select a quantity for ${productName}.`);
+                  }
+              });
+          });
+      }
+
+      function updateCart(productId, quantity) {
+          const existingItemIndex = cart.findIndex(item => item.id === productId);
+          if (existingItemIndex > -1) {
+              if (quantity > 0) {
+                  cart[existingItemIndex].quantity = quantity;
+              } else {
+                  cart.splice(existingItemIndex, 1); // Remove if quantity becomes 0
+              }
+          } else if (quantity > 0) {
+              const product = productsData.find(p => p.id === productId);
+              if (product) {
+                  cart.push({ id: productId, name: product.name, price: product.price, image: product.image, quantity: quantity });
+              }
+          }
+          saveCart();
+          renderProducts(); // Re-render to update the input values
+      }
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const navLinksDiv = document.querySelector('.nav-links');
+
+    mobileMenuButton.addEventListener('click', () => {
+        navLinksDiv.classList.toggle('open');
+    });
+      // Initial rendering
+      renderProducts();
+      updateCartCount();
+
+      // Apply initial filters if needed (e.g., if there are query parameters)
+      // applyFilters();
+    </script>
+
+</body>
+</html>
