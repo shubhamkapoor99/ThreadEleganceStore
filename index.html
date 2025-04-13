@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,36 +11,53 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         .hover-zoom {
             transition: transform 0.3s ease;
         }
+
         .hover-zoom:hover {
             transform: scale(1.05);
         }
+
         .gradient-bg {
             background: linear-gradient(135deg, #ffe4ec, #fff0f5);
         }
+
         .fade-in {
             opacity: 0;
             animation: fadeIn ease 1.2s forwards;
         }
+
         .fade-in-delay-1 {
             animation-delay: 0.5s;
         }
+
         .fade-in-delay-2 {
             animation-delay: 1s;
         }
+
         .fade-in-delay-3 {
             animation-delay: 1.5s;
         }
+
         @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .quantity-controls {
             display: flex;
             align-items: center;
         }
+
         .quantity-controls button {
             background: none;
             border: none;
@@ -48,6 +66,7 @@
             margin: 0 0.25rem;
             color: #555;
         }
+
         .quantity-input {
             width: 40px;
             padding: 0.25rem;
@@ -56,85 +75,123 @@
             text-align: center;
             margin: 0 0.25rem;
         }
+
         .mobile-menu-button {
-        display: none; /* Hidden by default on larger screens */
-    }
-    @media (max-width: 768px) {
-        .mobile-menu-button {
-            display: block;
-            cursor: pointer;
+            display: none;
+            /* Hidden by default on larger screens */
         }
-        .nav-links {
-            display: none; /* Hide links on smaller screens */
-            width: 100%;
-            position: absolute;
-            top: 60px; /* Adjust based on header height */
-            left: 0;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 1rem;
-            z-index: 10;
+
+        @media (max-width: 768px) {
+            .mobile-menu-button {
+                display: block;
+                cursor: pointer;
+            }
+
+            .nav-links {
+                display: none;
+                /* Hide links on smaller screens */
+                width: 100%;
+                position: absolute;
+                top: 60px;
+                /* Adjust based on header height */
+                left: 0;
+                background-color: white;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                padding: 1rem;
+                z-index: 10;
+            }
+
+            .nav-links.open {
+                display: block;
+            }
+
+            .nav-links ul {
+                flex-direction: column;
+                align-items: start;
+            }
+
+            .nav-links ul li {
+                margin-bottom: 0.75rem;
+            }
+
+            .nav-links ul li a {
+                display: block;
+                padding: 0.5rem 0;
+            }
         }
-        .nav-links.open {
-            display: block;
-        }
-        .nav-links ul {
-            flex-direction: column;
-            align-items: start;
-        }
-        .nav-links ul li {
-            margin-bottom: 0.75rem;
-        }
-        .nav-links ul li a {
-            display: block;
-            padding: 0.5rem 0;
-        }
-    }
     </style>
 </head>
+
 <body class="bg-white text-gray-800">
     <header class="shadow-md sticky top-0 z-50 bg-white fade-in">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-pink-600 tracking-wide">ThreadElegance Store</h1>
-            <nav class="bg-white shadow-md sticky top-0 z-50">
-              <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                  <button id="mobile-menu-button" class="mobile-menu-button focus:outline-none">
-                      <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                  </button>
-                  <div class="nav-links">
-                      <ul class="flex space-x-6">
-                          <li><a href="index.html" class="hover:text-pink-600 transition">Home</a></li>
-                          <li><a href="sarees.html" class="hover:text-pink-600 transition">Sarees</a></li>
-                          <li><a href="about.html" class="hover:text-pink-600 transition">About</a></li>
-                          <li><a href="contact.html" class="hover:text-pink-600 transition">Contact</a></li>
-                          <li>
-                              <a href="cart.html" class="hover:text-pink-600 transition relative">
-                                  🛒 Cart
-                                  <span id="cart-count" class="bg-red-500 text-white text-xs px-2 rounded-full absolute -top-2 -right-4">0</span>
-                              </a>
-                          </li>
-                      </ul>
-                  </div>
-              </div>
-          </nav>
+            <nav class="bg-white/90 shadow-md fixed w-full z-10 top-0 left-0">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <!-- Logo / Brand -->
+                        <div class="flex-shrink-0 text-xl font-bold text-pink-600">
+                            <a href="index.html">ThreadElegance Store</a>
+                        </div>
+
+                        <!-- Desktop Menu -->
+                        <div class="hidden md:flex space-x-6 items-center">
+                            <a href="index.html" class="hover:text-pink-600">Home</a>
+                            <a href="sarees.html" class="hover:text-pink-600">Sarees</a>
+                            <a href="about.html" class="hover:text-pink-600">About</a>
+                            <a href="contact.html" class="hover:text-pink-600">Contact</a>
+                            <a href="cart.html" class="relative hover:text-pink-600">🛒 Cart
+                                <span id="cart-count"
+                                    class="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 rounded-full">0</span>
+                            </a>
+                        </div>
+
+                        <!-- Mobile Hamburger Button -->
+                        <div class="md:hidden flex items-center">
+                            <button id="mobile-menu-button" class="text-gray-800 focus:outline-none bg-white/90 backdrop-blur-md">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 space-y-2">
+                    <a href="index.html" class="block text-gray-800 hover:text-pink-600">Home</a>
+                    <a href="sarees.html" class="block text-gray-800 hover:text-pink-600">Sarees</a>
+                    <a href="about.html" class="block text-gray-800 hover:text-pink-600">About</a>
+                    <a href="contact.html" class="block text-gray-800 hover:text-pink-600">Contact</a>
+                    <a href="cart.html" class="relative block text-gray-800 hover:text-pink-600">🛒 Cart
+                        <span id="cart-count-mobile"
+                            class="absolute top-1 left-16 bg-red-500 text-white text-xs px-2 rounded-full">0</span>
+                    </a>
+                </div>
+            </nav>
         </div>
     </header>
+
 
     <section class="gradient-bg py-20 text-center fade-in fade-in-delay-1">
         <div class="max-w-6xl mx-auto px-4">
             <h2 class="text-5xl font-extrabold text-gray-800 mb-4">Timeless Elegance, Woven in Silk</h2>
-            <p class="text-lg text-gray-600 mb-6">Explore our curated collection of traditional and contemporary sarees</p>
-            <a href="#sarees" class="bg-pink-600 text-white px-8 py-3 rounded-full hover:bg-pink-700 shadow-md transition">Shop Now</a>
+            <p class="text-lg text-gray-600 mb-6">Explore our curated collection of traditional and contemporary sarees
+            </p>
+            <a href="#sarees"
+                class="bg-pink-600 text-white px-8 py-3 rounded-full hover:bg-pink-700 shadow-md transition">Shop
+                Now</a>
         </div>
     </section>
 
     <section id="sarees" class="py-20 bg-white">
         <div class="max-w-6xl mx-auto px-4">
-            <h3 class="text-3xl font-semibold mb-10 text-center text-pink-600 fade-in fade-in-delay-1">Featured Sarees</h3>
+            <h3 class="text-3xl font-semibold mb-10 text-center text-pink-600 fade-in fade-in-delay-1">Featured Sarees
+            </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-1" data-color="red" data-price="12999" data-name="Kanchipuram Silk Saree" data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_1">
+                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-1"
+                    data-color="red" data-price="12999" data-name="Kanchipuram Silk Saree"
+                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_1">
                     <img src="images/Kanchipuram-Silk-Saree.jpg" alt="Saree 1" class="w-full h-72 object-cover">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Kanchipuram Silk Saree</h4>
@@ -143,15 +200,20 @@
                         <div class="mt-2 flex items-center space-x-2">
                             <label for="qty-1" class="text-sm font-medium">Qty:</label>
                             <div class="quantity-controls">
-                                <button type="button" class="decrement-btn" data-product-index="0"><i class="fas fa-minus"></i></button>
+                                <button type="button" class="decrement-btn" data-product-index="0"><i
+                                        class="fas fa-minus"></i></button>
                                 <input type="number" id="qty-1" class="quantity-input" value="0" min="1">
-                                <button type="button" class="increment-btn" data-product-index="0"><i class="fas fa-plus"></i></button>
+                                <button type="button" class="increment-btn" data-product-index="0"><i
+                                        class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded" data-product-index="0">Add to Cart</button>
+                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="0">Add to Cart</button>
                         </div>
                     </div>
                 </div>
-                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-2" data-color="blue" data-price="9499" data-name="Banarasi Georgette Saree" data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_2">
+                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-2"
+                    data-color="blue" data-price="9499" data-name="Banarasi Georgette Saree"
+                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_2">
                     <img src="images/Banarasi-Georgette-Saree.jpg" alt="Saree 2" class="w-full h-72 object-cover">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Banarasi Georgette Saree</h4>
@@ -160,15 +222,20 @@
                         <div class="mt-2 flex items-center space-x-2">
                             <label for="qty-2" class="text-sm font-medium">Qty:</label>
                             <div class="quantity-controls">
-                                <button type="button" class="decrement-btn" data-product-index="1"><i class="fas fa-minus"></i></button>
+                                <button type="button" class="decrement-btn" data-product-index="1"><i
+                                        class="fas fa-minus"></i></button>
                                 <input type="number" id="qty-2" class="quantity-input" value="0" min="1">
-                                <button type="button" class="increment-btn" data-product-index="1"><i class="fas fa-plus"></i></button>
+                                <button type="button" class="increment-btn" data-product-index="1"><i
+                                        class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded" data-product-index="1">Add to Cart</button>
+                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="1">Add to Cart</button>
                         </div>
                     </div>
                 </div>
-                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-3" data-color="green" data-price="7299" data-name="Tussar Handloom Saree" data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_3">
+                <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-3"
+                    data-color="green" data-price="7299" data-name="Tussar Handloom Saree"
+                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_3">
                     <img src="images/Tussar-Handloom-Saree.jpg" alt="Saree 3" class="w-full h-72 object-cover">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Tussar Handloom Saree</h4>
@@ -177,11 +244,14 @@
                         <div class="mt-2 flex items-center space-x-2">
                             <label for="qty-3" class="text-sm font-medium">Qty:</label>
                             <div class="quantity-controls">
-                                <button type="button" class="decrement-btn" data-product-index="2"><i class="fas fa-minus"></i></button>
+                                <button type="button" class="decrement-btn" data-product-index="2"><i
+                                        class="fas fa-minus"></i></button>
                                 <input type="number" id="qty-3" class="quantity-input" value="0" min="1">
-                                <button type="button" class="increment-btn" data-product-index="2"><i class="fas fa-plus"></i></button>
+                                <button type="button" class="increment-btn" data-product-index="2"><i
+                                        class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded" data-product-index="2">Add to Cart</button>
+                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="2">Add to Cart</button>
                         </div>
                     </div>
                 </div>
@@ -189,9 +259,10 @@
         </div>
     </section>
 
-    <a href="https://wa.me/91XXXXXXXXXX" target="_blank" class="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50">
+    <a href="https://wa.me/91XXXXXXXXXX" target="_blank"
+        class="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20 4a16 16 0 0 1-7.7 13.5L8 20l1.5-4.3A13.9 13.9 0 0 1 4 4a14 14 0 0 1 16 0z"/>
+            <path d="M20 4a16 16 0 0 1-7.7 13.5L8 20l1.5-4.3A13.9 13.9 0 0 1 4 4a14 14 0 0 1 16 0z" />
         </svg>
     </a>
 
@@ -204,7 +275,12 @@
     <script>
         const products = document.querySelectorAll('.product-card');
         const cartCount = document.getElementById('cart-count');
+        const mobileMenuBtn = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
 
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
         // Cart logic
         function getCart() {
             return JSON.parse(localStorage.getItem('cart')) || [];
@@ -259,14 +335,14 @@
         });
 
         document.querySelectorAll('.increment-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const quantityInput = this.previousElementSibling;
                 quantityInput.value = parseInt(quantityInput.value) + 1;
             });
         });
 
         document.querySelectorAll('.decrement-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const quantityInput = this.nextElementSibling;
                 const currentValue = parseInt(quantityInput.value);
                 if (currentValue > 1) {
@@ -280,8 +356,8 @@
         if (whatsappBtn) {
             whatsappBtn.addEventListener('click', () => {
                 const cart = getCart();
-                if (cart.length === 0) { 
-			  alert('Your cart is empty!');
+                if (cart.length === 0) {
+                    alert('Your cart is empty!');
                     return;
                 }
 
@@ -296,13 +372,8 @@
             const cart = getCart();
             return cart.reduce((total, item) => total + (parseInt(item.price) * item.quantity), 0);
         }
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const navLinksDiv = document.querySelector('.nav-links');
-
-    mobileMenuButton.addEventListener('click', () => {
-        navLinksDiv.classList.toggle('open');
-    });
     </script>
 
 </body>
+
 </html>
