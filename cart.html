@@ -89,34 +89,41 @@
             }
 
             .nav-links {
-                display: none; /* Hide links on smaller screens */
+                display: none;
+                /* Hide links on smaller screens */
                 width: 100%;
                 position: absolute;
-                top: 60px; /* Adjust based on header height */
+                top: 60px;
+                /* Adjust based on header height */
                 left: 0;
                 background-color: white;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 padding: 1rem;
                 z-index: 10;
             }
+
             .nav-links.open {
                 display: block;
             }
+
             .nav-links ul {
                 flex-direction: column;
                 align-items: start;
             }
+
             .nav-links ul li {
                 margin-bottom: 0.75rem;
             }
+
             .nav-links ul li a {
                 display: block;
                 padding: 0.5rem 0;
             }
         }
+
         a {
-    text-decoration: none !important;
-}
+            text-decoration: none !important;
+        }
     </style>
 </head>
 
@@ -142,7 +149,8 @@
                         </div>
 
                         <div class="md:hidden flex items-center">
-                            <button id="mobile-menu-button" class="text-gray-800 focus:outline-none bg-white/90 backdrop-blur-md">
+                            <button id="mobile-menu-button"
+                                class="text-gray-800 focus:outline-none bg-white/90 backdrop-blur-md">
                                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 6h16M4 12h16M4 18h16" />
@@ -173,7 +181,7 @@
         </div>
         <div id="cart-items" class="space-y-2"></div>
     </section>
-    
+
 
     <div class="max-w-3xl mx-auto px-4 mt-4 flex items-center justify-between">
         <div id="total-amount" class="text-xl font-semibold">Total: ₹0</div>
@@ -232,7 +240,8 @@
                         <option value="West Bengal">West Bengal</option>
                         <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
                         <option value="Chandigarh">Chandigarh</option>
-                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and
+                            Diu</option>
                         <option value="Delhi">Delhi</option>
                         <option value="Jammu and Kashmir">Jammu and Kashmir</option>
                         <option value="Ladakh">Ladakh</option>
@@ -240,7 +249,7 @@
                         <option value="Puducherry">Puducherry</option>
                     </select>
                 </div>
-                
+
             </form>
         </div>
 
@@ -259,7 +268,7 @@
         <button id="close-popup"
             class="absolute top-5 right-5 text-white text-4xl font-bold hover:text-red-400">&times;</button>
 
-            <img id="popup-image" src="" alt="Full Image"
+        <img id="popup-image" src="" alt="Full Image"
             class="w-auto max-w-full max-h-[80vh] object-contain rounded-lg shadow-xl mb-4 transition-all duration-300" />
 
         <!-- Thumbnail Container -->
@@ -305,39 +314,40 @@
                 const imagePath = `images/${imageName}/1.jpg`;
 
                 const itemHTML = `
-    <div class="border p-4 rounded shadow flex items-center justify-between space-x-4">
-        <!-- Image and Text Section -->
-        <div class="flex items-center space-x-4 flex-1">
-            <img src="${imagePath}" alt="${item.name}" class="w-16 h-16 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="${imageName}">
-            <div>
-                <h4 class="font-semibold text-lg">${item.name}</h4>
-                <p class="text-sm text-gray-500">₹${item.price}</p>
-            </div>
-        </div>
+  <div class="border rounded-lg shadow-md p-4 mb-4 bg-white flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:space-x-4">
+    
+    <!-- Image and Details -->
+    <div class="flex items-start space-x-4 flex-1">
+      <img src="${imagePath}" alt="${item.name}" class="w-20 h-20 object-cover rounded-lg cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="${imageName}">
+      <div>
+        <h4 class="font-semibold text-lg text-gray-800">${item.name}</h4>
+        <p class="text-sm text-gray-500 mt-1">Price: ₹${item.price}</p>
+      </div>
+    </div>
 
-        <!-- Quantity and Price Section -->
-        <div class="flex items-center justify-between space-x-4 flex-1">
-            <div class="flex items-center space-x-2">
+    <!-- Quantity and Price -->
+    <div class="flex justify-between items-center sm:flex-col sm:items-end flex-1 space-x-4 sm:space-x-0 sm:space-y-2">
+      <div class="flex items-center space-x-2">
                 <button class="decrement-btn" data-index="${index}"><i class="fas fa-minus"></i></button>
-                <input type="number" class="quantity-input w-12 text-center border rounded" value="${item.quantity}" min="1" data-index="${index}">
+                <input type="number" class="quantity-input w-16 text-center border rounded" value="${item.quantity}" min="1" data-index="${index}">
                 <button class="increment-btn" data-index="${index}"><i class="fas fa-plus"></i></button>
             </div>
-            <div class="text-right">
-                <p class="text-sm text-gray-600">Qty: <span>${item.quantity}</span></p>
-                <p class="text-pink-600 font-semibold">₹${itemTotal}</p>
-            </div>
-        </div>
-
-        <!-- Remove Button Section -->
-        <div class="flex-shrink-0">
-            <button class="remove-from-cart text-red-500 hover:text-red-700 mt-2" data-index="${index}">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
+         <div class="text-right">
+        <p class="text-sm text-gray-600">Qty: <span>${item.quantity}</span></p>
+        <p class="text-pink-600 font-semibold text-lg">₹${itemTotal}</p>
+      </div>
     </div>
+
+    <!-- Remove Button -->
+    <div class="flex justify-end">
+      <button class="remove-from-cart text-red-500 hover:text-red-700" data-index="${index}" title="Remove item">
+        <i class="fas fa-trash-alt text-lg"></i>
+      </button>
+    </div>
+  </div>
 `;
 
-cartItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
+                cartItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
             });
 
             totalElement.innerText = `Total: ₹${total}`;
