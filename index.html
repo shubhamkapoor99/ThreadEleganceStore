@@ -68,12 +68,12 @@
         }
 
         .quantity-input {
-            width: 40px;
+            width: 35px;
             padding: 0.25rem;
-            border: 1px solid #ccc;
             border-radius: 4px;
             text-align: center;
             margin: 0 0.25rem;
+            background-color: #faf7f7;
         }
 
         .mobile-menu-button {
@@ -191,9 +191,10 @@
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
                 <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-1"
-                    data-color="red" data-price="12999" data-name="Kanchipuram Silk Saree"
-                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_1">
-                    <img src="images/Kanchipuram-Silk-Saree.jpg" alt="Saree 1" class="w-full h-72 object-cover">
+                    data-color="red" data-price="12999" data-name="Kanchipuram Silk Saree">
+                    <img src="images/Kanchipuram-Silk-Saree/1.JPG" alt="Saree 1"
+                        class="w-full h-72 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="Kanchipuram-Silk-Saree"
+                        data-count="4" id="main-saree-image">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Kanchipuram Silk Saree</h4>
                         <p class="text-sm text-gray-500 mt-2">Elegant maroon silk with golden zari border</p>
@@ -207,15 +208,15 @@
                                 <button type="button" class="increment-btn" data-product-index="0"><i
                                         class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
-                                data-product-index="0">Add to Cart</button>
+                            <!-- <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="0">Add to Cart</button> -->
                         </div>
                     </div>
                 </div>
                 <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-2"
-                    data-color="blue" data-price="9499" data-name="Banarasi Georgette Saree"
-                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_2">
-                    <img src="images/Banarasi-Georgette-Saree.jpg" alt="Saree 2" class="w-full h-72 object-cover">
+                    data-color="blue" data-price="9499" data-name="Banarasi Georgette Saree">
+                    <img src="images/Banarasi-Georgette-Saree/1.jpg" alt="Saree 2" class="w-full h-72 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="Banarasi-Georgette-Saree"
+                    data-count="4" id="main-saree-image">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Banarasi Georgette Saree</h4>
                         <p class="text-sm text-gray-500 mt-2">Soft georgette with golden motifs</p>
@@ -229,15 +230,15 @@
                                 <button type="button" class="increment-btn" data-product-index="1"><i
                                         class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
-                                data-product-index="1">Add to Cart</button>
+                            <!-- <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="1">Add to Cart</button> -->
                         </div>
                     </div>
                 </div>
                 <div class="product-card border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition hover-zoom fade-in fade-in-delay-3"
-                    data-color="green" data-price="7299" data-name="Tussar Handloom Saree"
-                    data-image="https://drive.google.com/uc?export=view&id=YOUR_IMAGE_ID_3">
-                    <img src="images/Tussar-Handloom-Saree.jpg" alt="Saree 3" class="w-full h-72 object-cover">
+                    data-color="green" data-price="7299" data-name="Tussar Handloom Saree">
+                    <img src="images/Tussar-Handloom-Saree/1.jpg" alt="Saree 3" class="w-full h-72 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="Tussar-Handloom-Saree"
+                    data-count="4" id="main-saree-image">
                     <div class="p-5">
                         <h4 class="text-xl font-semibold">Tussar Handloom Saree</h4>
                         <p class="text-sm text-gray-500 mt-2">Earthy tones with artisan handloom finish</p>
@@ -251,8 +252,8 @@
                                 <button type="button" class="increment-btn" data-product-index="2"><i
                                         class="fas fa-plus"></i></button>
                             </div>
-                            <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
-                                data-product-index="2">Add to Cart</button>
+                            <!-- <button class="add-to-cart bg-pink-500 text-white px-4 py-2 rounded"
+                                data-product-index="2">Add to Cart</button> -->
                         </div>
                     </div>
                 </div>
@@ -272,36 +273,92 @@
             <p>&copy; 2025 Saree Elegance. All rights reserved. | Made with ❤ in India</p>
         </div>
     </footer>
+    <!-- Popup Modal (Hidden Initially) -->
+    <div id="image-popup-overlay"
+        class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 hidden p-4">
+        <button id="close-popup"
+            class="absolute top-5 right-5 text-white text-4xl font-bold hover:text-red-400">&times;</button>
 
+        <img id="popup-image" src="" alt="Full Image"
+            class="max-w-3xl max-h-[80vh] rounded-lg shadow-xl mb-4 transition-all duration-300" />
+
+        <!-- Thumbnail Container -->
+        <div id="thumbnail-container" class="flex gap-2 overflow-x-auto max-w-full"></div>
+    </div>
     <script>
-        const products = document.querySelectorAll('.product-card');
-        const cartCount = document.getElementById('cart-count');
-        const mobileMenuBtn = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
+    const products = document.querySelectorAll('.product-card');
+    const cartCount = document.getElementById('cart-count');
+    const mobileMenuBtn = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
 
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+    mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+
+    function getCart() {
+        return JSON.parse(localStorage.getItem('cart')) || [];
+    }
+
+    function setCart(cart) {
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCountDisplay();
+    }
+
+    function updateCartCountDisplay() {
+        const cart = getCart();
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        document.querySelectorAll('#cart-count, #cart-count-mobile').forEach(el => {
+            el.innerText = count;
         });
-        // Cart logic
-        function getCart() {
-            return JSON.parse(localStorage.getItem('cart')) || [];
+    }
+
+    function updateCart(productName, price, image, quantity) {
+        const cart = getCart();
+        const existingItem = cart.find(item => item.name === productName);
+
+        if (existingItem) {
+            existingItem.quantity = quantity;
+        } else {
+            cart.push({ name: productName, price, image, quantity });
         }
 
-        function setCart(cart) {
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartCountDisplay();
+        const updatedCart = cart.filter(item => item.quantity > 0); // Remove if qty is 0
+        setCart(updatedCart);
+    }
+
+    products.forEach((card, index) => {
+        const incBtn = card.querySelector('.increment-btn');
+        const decBtn = card.querySelector('.decrement-btn');
+        const qtyInput = card.querySelector('.quantity-input');
+        const name = card.dataset.name;
+        const price = parseInt(card.dataset.price);
+        const image = card.querySelector('img')?.src || '';
+
+        // Increment
+        incBtn.addEventListener('click', () => {
+            let qty = parseInt(qtyInput.value) || 0;
+            qty++;
+            qtyInput.value = qty-1;
+            updateCart(name, price, image, qty);
+        });
+
+        // Decrement
+        decBtn.addEventListener('click', () => {
+            let qty = parseInt(qtyInput.value) || 0;
+            if (qty > 0) qty--;
+            qtyInput.value = qty;
+            updateCart(name, price, image, qty);
+        });
+
+        // Optional: load existing qty from cart if page is refreshed
+        const cart = getCart();
+        const existingItem = cart.find(item => item.name === name);
+        if (existingItem) {
+            qtyInput.value = existingItem.quantity;
         }
+    });
 
-        function updateCartCountDisplay() {
-            const cart = getCart();
-            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-            document.querySelectorAll('#cart-count, #cart-count-mobile').forEach(el => {
-                el.innerText = count;
-            });
-        }
-
-        // Initialize cart count
         updateCartCountDisplay();
 
         document.querySelectorAll('.add-to-cart').forEach((btn) => {
@@ -377,8 +434,53 @@
             const cart = getCart();
             return cart.reduce((total, item) => total + (parseInt(item.price) * item.quantity), 0);
         }
-    </script>
+        const imagePopupOverlay = document.getElementById('image-popup-overlay');
+        const popupImage = document.getElementById('popup-image');
+        const thumbnailContainer = document.getElementById('thumbnail-container');
+        const closePopup = document.getElementById('close-popup');
 
+        const mainImages = document.querySelectorAll('.popup-image');
+
+        mainImages.forEach((mainImg) => {
+            mainImg.addEventListener('click', () => {
+                const folder = mainImg.dataset.folder;
+                const mainImagePath = `images/${folder}/1.jpg`;
+                popupImage.src = mainImagePath;
+                imagePopupOverlay.classList.remove('hidden');
+
+                // Clear old thumbnails
+                thumbnailContainer.innerHTML = '';
+
+                // Load images dynamically from 2.jpg to 6.jpg (customize range as needed)
+                for (let i = 1; i <= 6; i++) {
+                    const thumbPath = `images/${folder}/${i}.jpg`;
+                    const thumb = document.createElement('img');
+                    thumb.src = thumbPath;
+                    thumb.className = 'w-16 h-16 object-cover cursor-pointer rounded hover:scale-105 transition';
+                    thumb.addEventListener('click', () => {
+                        popupImage.src = thumbPath;
+                    });
+                    thumbnailContainer.appendChild(thumb);
+                }
+            });
+        });
+
+        closePopup.addEventListener('click', () => {
+            imagePopupOverlay.classList.add('hidden');
+        });
+
+        imagePopupOverlay.addEventListener('click', (e) => {
+            if (e.target === imagePopupOverlay) {
+                imagePopupOverlay.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                imagePopupOverlay.classList.add('hidden');
+            }
+        });
+    </script>
 </body>
 
 </html>

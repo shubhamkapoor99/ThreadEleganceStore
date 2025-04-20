@@ -89,42 +89,39 @@
             }
 
             .nav-links {
-                display: none;
-                /* Hide links on smaller screens */
+                display: none; /* Hide links on smaller screens */
                 width: 100%;
                 position: absolute;
-                top: 60px;
-                /* Adjust based on header height */
+                top: 60px; /* Adjust based on header height */
                 left: 0;
                 background-color: white;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 padding: 1rem;
                 z-index: 10;
             }
-
             .nav-links.open {
                 display: block;
             }
-
             .nav-links ul {
                 flex-direction: column;
                 align-items: start;
             }
-
             .nav-links ul li {
                 margin-bottom: 0.75rem;
             }
-
             .nav-links ul li a {
                 display: block;
                 padding: 0.5rem 0;
             }
         }
+        a {
+    text-decoration: none !important;
+}
     </style>
 </head>
 
 <body class="bg-white font-sans text-gray-800">
-    <header class="shadow-md sticky top-0 z-50 bg-white fade-in">
+    <header class="shadow-md sticky top-0 z-50 bg-white fade-in ">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <nav class="bg-white/90 shadow-md fixed w-full z-10 top-0 left-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -184,7 +181,7 @@
     <section class="max-w-3xl mx-auto px-4 pb-20">
         <div class="mt-6">
             <h3 class="text-sm font-semibold mb-2 text-pink-700">Shipping Info</h3>
-            <form id="shipping-form" class="row row-cols-md-2 gx-2 gy-2">
+            <form id="shipping-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="col">
                     <label for="name" class="form-label small font-weight-medium text-muted">Name:</label>
                     <input type="text" class="form-control form-control-sm" id="name" name="name" required>
@@ -199,8 +196,47 @@
                 </div>
                 <div class="col">
                     <label for="state" class="form-label small font-weight-medium text-muted">State:</label>
-                    <input type="text" class="form-control form-control-sm" id="state" name="state" required>
+                    <select id="state" name="state" class="form-control form-control-sm" required>
+                        <option value="">-- Select State --</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                        <option value="Assam">Assam</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Chhattisgarh">Chhattisgarh</option>
+                        <option value="Goa">Goa</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Haryana">Haryana</option>
+                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                        <option value="Jharkhand">Jharkhand</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Kerala">Kerala</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Manipur">Manipur</option>
+                        <option value="Meghalaya">Meghalaya</option>
+                        <option value="Mizoram">Mizoram</option>
+                        <option value="Nagaland">Nagaland</option>
+                        <option value="Odisha">Odisha</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Sikkim">Sikkim</option>
+                        <option value="Tamil Nadu">Tamil Nadu</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="Tripura">Tripura</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                        <option value="Uttarakhand">Uttarakhand</option>
+                        <option value="West Bengal">West Bengal</option>
+                        <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                        <option value="Chandigarh">Chandigarh</option>
+                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                        <option value="Ladakh">Ladakh</option>
+                        <option value="Lakshadweep">Lakshadweep</option>
+                        <option value="Puducherry">Puducherry</option>
+                    </select>
                 </div>
+                
             </form>
         </div>
 
@@ -213,7 +249,18 @@
             </div>
         </div>
     </section>
+    <!-- Popup Modal (Hidden Initially) -->
+    <div id="image-popup-overlay"
+        class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 hidden p-4">
+        <button id="close-popup"
+            class="absolute top-5 right-5 text-white text-4xl font-bold hover:text-red-400">&times;</button>
 
+            <img id="popup-image" src="" alt="Full Image"
+            class="w-auto max-w-full max-h-[80vh] object-contain rounded-lg shadow-xl mb-4 transition-all duration-300" />
+
+        <!-- Thumbnail Container -->
+        <div id="thumbnail-container" class="flex gap-2 overflow-x-auto max-w-full"></div>
+    </div>
     <script>
         const getCart = () => JSON.parse(localStorage.getItem('cart') || '[]');
         const setCart = (cart) => localStorage.setItem('cart', JSON.stringify(cart));
@@ -251,12 +298,12 @@
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
                 const imageName = item.name.replace(/[^a-zA-Z0-9]/g, ' ').trim().replace(/\s+/g, '-').toLowerCase();
-                const imagePath = `images/${imageName}.jpg`;
+                const imagePath = `images/${imageName}/1.jpg`;
 
                 const itemHTML = `
                     <div class="border p-4 rounded shadow flex items-center justify-between">
                         <div class="flex items-center space-x-4">
-                            <img src="${imagePath}" alt="${item.name}" class="w-16 h-16 object-cover rounded">
+                            <img src="${imagePath}" alt="${item.name}" class="w-full h-16 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="${imageName}">
                             <div>
                                 <h4 class="font-semibold">${item.name}</h4>
                                 <p class="text-sm text-gray-500">₹${item.price}</p>
@@ -357,6 +404,53 @@
 
         updateCartCount();
         renderCart();
+
+        const imagePopupOverlay = document.getElementById('image-popup-overlay');
+        const popupImage = document.getElementById('popup-image');
+        const thumbnailContainer = document.getElementById('thumbnail-container');
+        const closePopup = document.getElementById('close-popup');
+
+        const mainImages = document.querySelectorAll('.popup-image');
+
+        mainImages.forEach((mainImg) => {
+            mainImg.addEventListener('click', () => {
+                const folder = mainImg.dataset.folder;
+                const mainImagePath = `images/${folder}/1.jpg`;
+                popupImage.src = mainImagePath;
+                imagePopupOverlay.classList.remove('hidden');
+
+                // Clear old thumbnails
+                thumbnailContainer.innerHTML = '';
+
+                // Load images dynamically from 2.jpg to 6.jpg (customize range as needed)
+                for (let i = 1; i <= 6; i++) {
+                    const thumbPath = `images/${folder}/${i}.jpg`;
+                    const thumb = document.createElement('img');
+                    thumb.src = thumbPath;
+                    thumb.className = 'w-16 h-16 object-cover cursor-pointer rounded hover:scale-105 transition';
+                    thumb.addEventListener('click', () => {
+                        popupImage.src = thumbPath;
+                    });
+                    thumbnailContainer.appendChild(thumb);
+                }
+            });
+        });
+
+        closePopup.addEventListener('click', () => {
+            imagePopupOverlay.classList.add('hidden');
+        });
+
+        imagePopupOverlay.addEventListener('click', (e) => {
+            if (e.target === imagePopupOverlay) {
+                imagePopupOverlay.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                imagePopupOverlay.classList.add('hidden');
+            }
+        });
     </script>
 
 </body>

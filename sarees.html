@@ -6,6 +6,7 @@
     <title>Elegant Sarees - Shop Now</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=remove" />
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -51,18 +52,19 @@
         }
         .quantity-controls button {
             background: none;
-            border: 1px solid #ccc;
+            border: none;
             cursor: pointer;
-            padding: 5px 10px;
-            margin: 0 5px;
-            border-radius: 4px;
+            padding: 0.25rem;
+            margin: 0 0.25rem;
+            color: #555;
         }
         .quantity-input {
-            width: 50px;
-            padding: 5px;
-            border: 1px solid #ccc;
+            width: 35px;
+            padding: 0.25rem;
             border-radius: 4px;
             text-align: center;
+            margin: 0 0.25rem;
+            background-color: #edf0f5;
         }
         .add-to-cart-btn {
             background-color: #d40061;
@@ -199,210 +201,235 @@
     <footer class="bg-white shadow-md py-4 text-center text-gray-600">
         <p>&copy; 2025 SareeStore. All rights reserved.</p>
     </footer>
+    <!-- Popup Modal (Hidden Initially) -->
+    <div id="image-popup-overlay"
+        class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 hidden p-4">
+        <button id="close-popup"
+            class="absolute top-5 right-5 text-white text-4xl font-bold hover:text-red-400">&times;</button>
 
+            <img id="popup-image" src="" alt="Full Image"
+            class="w-auto max-w-full max-h-[80vh] object-contain rounded-lg shadow-xl mb-4 transition-all duration-300" />
+
+        <!-- Thumbnail Container -->
+        <div id="thumbnail-container" class="flex gap-2 overflow-x-auto max-w-full"></div>
+    </div>
     <script>
-      const colorFilter = document.getElementById('colorFilter');
-      const priceFilter = document.getElementById('priceFilter');
-      const applyFiltersBtn = document.getElementById('applyFiltersBtn');
-      const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-      const productListDiv = document.getElementById('product-list');
-      const cartCountSpan = document.getElementById('cart-count');
-      let cart = getCart(); // Initialize cart from localStorage
-      const mobileMenuBtn = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
-      // Sample product data (replace with your actual data source)
-      const productsData = [
-          { id: 1, name: 'Kanchipuram Silk Saree', price: 5500, image: 'images/Kanchipuram-Silk-Saree.jpg', color: 'red' },
-          { id: 2, name: 'Banarasi Georgette Saree', price: 8200, image: 'images/Banarasi-Georgette-Saree.jpg', color: 'red' },
-          { id: 3, name: 'Tussar Handloom Saree', price: 3800, image: 'images/Tussar-Handloom-Saree.jpg', color: 'blue' },
-          { id: 4, name: 'Georgette Embroidered Saree', price: 4200, image: 'images/georgette_embroidered.jpg', color: 'red' },
-          { id: 5, name: 'Tussar Silk Saree', price: 6100, image: 'images/tussar_silk.jpg', color: 'green' },
-          { id: 6, name: 'Crepe Printed Saree', price: 2900, image: 'images/crepe_printed.jpg', color: 'blue' },
-      ];
-
-      let filteredProducts = [...productsData]; // Start with all products
-
-      function applyFilters() {
+        const $ = id => document.getElementById(id);
+        
+        const productListDiv = $('product-list');
+        const cartCountSpan = $('cart-count');
+        const mobileMenuBtn = $('mobile-menu-button');
+        const mobileMenu = $('mobile-menu');
+        const colorFilter = $('colorFilter');
+        const priceFilter = $('priceFilter');
+        
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const productsData = [
+          { id: 1, name: 'Kanchipuram Silk Saree', price: 5500, image: 'Kanchipuram-Silk-Saree', color: 'red', imageCount: 4 },
+          { id: 2, name: 'Banarasi Georgette Saree', price: 8200, image: 'Banarasi-Georgette-Saree', color: 'red', imageCount: 3 },
+          { id: 3, name: 'Tussar Handloom Saree', price: 3800, image: 'Tussar-Handloom-Saree', color: 'blue', imageCount: 3 },
+          { id: 4, name: 'Georgette Embroidered Saree', price: 4200, image: 'georgette_embroidered', color: 'red', imageCount: 2 },
+          { id: 5, name: 'Tussar Silk Saree', price: 6100, image: 'tussar_silk', color: 'green', imageCount: 2 },
+          { id: 6, name: 'Crepe Printed Saree', price: 2900, image: 'crepe_printed', color: 'blue', imageCount: 2 },
+          { id: 7, name: 'Kanchipuram Silk Saree', price: 5500, image: 'Kanchipuram-Silk-Saree', color: 'red', imageCount: 4 },
+          { id: 8, name: 'Banarasi Georgette Saree', price: 8200, image: 'Banarasi-Georgette-Saree', color: 'red', imageCount: 3 },
+          { id: 9, name: 'Tussar Handloom Saree', price: 3800, image: 'Tussar-Handloom-Saree', color: 'blue', imageCount: 3 },
+          { id: 10, name: 'Georgette Embroidered Saree', price: 4200, image: 'georgette_embroidered', color: 'red', imageCount: 2 },
+          { id: 11, name: 'Tussar Silk Saree', price: 6100, image: 'tussar_silk', color: 'green', imageCount: 2 },
+          { id: 12, name: 'Crepe Printed Saree', price: 2900, image: 'crepe_printed', color: 'blue', imageCount: 2 },
+        ];
+        let filteredProducts = [...productsData];
+        
+        mobileMenuBtn.onclick = () => mobileMenu.classList.toggle('hidden');
+        $('applyFiltersBtn').onclick = applyFilters;
+        $('resetFiltersBtn').onclick = () => {
+          colorFilter.value = '';
+          priceFilter.value = '';
+          filteredProducts = [...productsData];
+          renderProducts();
+        };
+        
+        function applyFilters() {
           const color = colorFilter.value;
           const price = priceFilter.value;
-
-          filteredProducts = productsData.filter(product => {
-              let colorMatch = true;
-              let priceMatch = true;
-
-              if (color && product.color !== color) {
-                  colorMatch = false;
-              }
-
-              if (price) {
-                  if (price === 'under5k' && product.price >= 5000) priceMatch = false;
-                  if (price === '5kto10k' && (product.price < 5000 || product.price > 10000)) priceMatch = false;
-                  if (price === 'over10k' && product.price <= 10000) priceMatch = false;
-              }
-
-              return colorMatch && priceMatch;
+          filteredProducts = productsData.filter(p => {
+            const colorMatch = !color || p.color === color;
+            const priceMatch = !price ||
+              (price === 'under5k' && p.price < 5000) ||
+              (price === '5kto10k' && p.price >= 5000 && p.price <= 10000) ||
+              (price === 'over10k' && p.price > 10000);
+            return colorMatch && priceMatch;
           });
-
           renderProducts();
-      }
-
-      applyFiltersBtn.addEventListener('click', applyFilters);
-
-function resetFilters() {
-    colorFilter.value = '';
-    priceFilter.value = '';
-    filteredProducts = [...productsData];
-    renderProducts();
-}
-
-resetFiltersBtn.addEventListener('click', resetFilters);
-      function getCart() {
-          return JSON.parse(localStorage.getItem('cart')) || [];
-      }
-
-      function saveCart() {
+        }
+        
+        function saveCart() {
           localStorage.setItem('cart', JSON.stringify(cart));
           updateCartCount();
-      }
-
-      function updateCartCount() {
-        const cart = getCart();
-            document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cart-count-mobile').innerText = document.getElementById('cart-count').innerText;
-      }
-
-      function renderProducts() {
+        }
+        
+        function updateCartCount() {
+          const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+          $('cart-count').innerText = count;
+          $('cart-count-mobile').innerText = count;
+        }
+        
+        function getQuantityInCart(productId) {
+          return cart.find(item => item.id === productId)?.quantity || 0;
+        }
+        
+        function renderProducts() {
           productListDiv.innerHTML = '';
-          filteredProducts.forEach(product => {
-              const productCard = document.createElement('div');
-              productCard.classList.add('product-card', 'hover-zoom');
-              productCard.dataset.color = product.color; // Add color as data attribute (though not directly used in this render)
-              productCard.dataset.price = product.price; // Add price as data attribute (though not directly used in this render)
-              productCard.innerHTML = `
-                  <img src="${product.image}" alt="${product.name}">
-                  <div class="product-info">
-                      <h3 class="product-title">${product.name}</h3>
-                      <p class="product-price">₹${product.price}</p>
-                      <div class="quantity-controls">
-                          <button class="decrement-btn" data-product-id="${product.id}">-</button>
-                          <input type="number" class="quantity-input" id="qty-${product.id}" value="${getQuantityInCart(product.id)}" min="0">
-                          <button class="increment-btn" data-product-id="${product.id}">+</button>
-                      </div>
-                      <button class="add-to-cart-btn" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${product.image}">Add to Cart</button>
-                  </div>
-              `;
-              productListDiv.appendChild(productCard);
+          filteredProducts.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'product-card hover-zoom';
+            card.dataset.color = p.color;
+            card.dataset.price = p.price;
+            card.innerHTML = `
+              <img src="images/${p.image}/1.JPG" alt="${p.name}" class="w-full h-72 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image"
+                data-folder="images/${p.image}" data-count="${p.imageCount}" data-product-id="${p.id}" onclick="showThumbnails(this)">
+              <div class="product-info">
+                <h3 class="product-title">${p.name}</h3>
+                <p class="product-price">₹${p.price}</p>
+                <div class="quantity-controls">
+                  <button class="decrement-btn fas fa-minus" data-product-id="${p.id}"></button>
+                  <input type="number" class="quantity-input" id="qty-${p.id}" value="${getQuantityInCart(p.id)}" min="0">
+                  <button class="increment-btn fas fa-plus" data-product-id="${p.id}"></button>
+                </div>
+              </div>
+              <div class="thumbnail-container hidden flex flex-row gap-2 overflow-x-auto max-w-full px-4 mt-4" id="thumbnails-${p.id}"></div>
+            `;
+            productListDiv.appendChild(card);
           });
-
-          addQuantityButtonListeners();
-          addAddToCartListeners();
-      }
-
-      function getQuantityInCart(productId) {
-          const item = cart.find(item => item.id === productId);
-          return item ? item.quantity : 0;
-      }
-
-      function addQuantityButtonListeners() {
-          const incrementButtons = document.querySelectorAll('.increment-btn');
-          const decrementButtons = document.querySelectorAll('.decrement-btn');
-
-          incrementButtons.forEach(button => {
-              button.addEventListener('click', function() {
-                  const productId = parseInt(this.dataset.productId);
-                  const quantityInput = document.getElementById(`qty-${productId}`);
-                  quantityInput.value = parseInt(quantityInput.value) + 1;
-                  updateCart(productId, parseInt(quantityInput.value));
-              });
+        
+          addQuantityListeners();
+          addCartListeners();
+        }
+        
+        function addQuantityListeners() {
+          document.querySelectorAll('.increment-btn').forEach(btn => {
+            btn.onclick = () => {
+              const id = +btn.dataset.productId;
+              const input = $(`qty-${id}`);
+              input.value = +input.value + 1;
+              updateCart(id, +input.value);
+            };
           });
-
-          decrementButtons.forEach(button => {
-              button.addEventListener('click', function() {
-                  const productId = parseInt(this.dataset.productId);
-                  const quantityInput = document.getElementById(`qty-${productId}`);
-                  const currentValue = parseInt(quantityInput.value);
-                  if (currentValue > 0) {
-                      quantityInput.value = currentValue - 1;
-                      updateCart(productId, parseInt(quantityInput.value));
-                  }
-              });
+        
+          document.querySelectorAll('.decrement-btn').forEach(btn => {
+            btn.onclick = () => {
+              const id = +btn.dataset.productId;
+              const input = $(`qty-${id}`);
+              if (+input.value > 0) {
+                input.value = +input.value - 1;
+                updateCart(id, +input.value);
+              }
+            };
           });
-
-          const quantityInputs = document.querySelectorAll('.quantity-input');
-          quantityInputs.forEach(input => {
-              input.addEventListener('change', function() {
-                  const productId = parseInt(this.id.split('-')[1]);
-                  const newQuantity = parseInt(this.value);
-                  if (!isNaN(newQuantity) && newQuantity >= 0) {
-                      updateCart(productId, newQuantity);
-                  } else {
-                      this.value = getQuantityInCart(productId);
-                  }
-              });
+        
+          document.querySelectorAll('.quantity-input').forEach(input => {
+            input.onchange = () => {
+              const id = +input.id.split('-')[1];
+              const qty = +input.value;
+              input.value = qty >= 0 ? qty : getQuantityInCart(id);
+              updateCart(id, qty);
+            };
           });
-      }
-
-      function addAddToCartListeners() {
-          const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
-          addToCartButtons.forEach(button => {
-              button.addEventListener('click', function() {
-                  const productId = parseInt(this.dataset.productId);
-                  const productName = this.dataset.productName;
-                  const productPrice = parseFloat(this.dataset.productPrice);
-                  const productImage = this.dataset.productImage;
-                  const quantityInput = document.getElementById(`qty-${productId}`);
-                  const quantity = parseInt(quantityInput.value);
-
-                  if (quantity > 0) {
-                      const existingItemIndex = cart.findIndex(item => item.id === productId);
-                      if (existingItemIndex > -1) {
-                          cart[existingItemIndex].quantity = quantity;
-                      } else {
-                          cart.push({ id: productId, name: productName, price: productPrice, image: productImage, quantity: quantity });
-                      }
-                      saveCart();
-                      alert(`${quantity} x ${productName} added to cart!`);
-                  } else {
-                      alert(`Please select a quantity for ${productName}.`);
-                  }
-              });
-          });
-      }
-
-      function updateCart(productId, quantity) {
-          const existingItemIndex = cart.findIndex(item => item.id === productId);
-          if (existingItemIndex > -1) {
-              if (quantity > 0) {
-                  cart[existingItemIndex].quantity = quantity;
+        }
+        
+        function addCartListeners() {
+          document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.onclick = () => {
+              const id = +btn.dataset.productId;
+              const name = btn.dataset.productName;
+              const price = +btn.dataset.productPrice;
+              const image = btn.dataset.productImage;
+              const qty = +$(`qty-${id}`).value;
+        
+              if (qty > 0) {
+                const idx = cart.findIndex(i => i.id === id);
+                if (idx > -1) cart[idx].quantity = qty;
+                else cart.push({ id, name, price, image, quantity: qty });
+        
+                saveCart();
+                alert(`${qty} x ${name} added to cart!`);
               } else {
-                  cart.splice(existingItemIndex, 1); // Remove if quantity becomes 0
+                alert(`Please select a quantity for ${name}.`);
               }
-          } else if (quantity > 0) {
-              const product = productsData.find(p => p.id === productId);
-              if (product) {
-                  cart.push({ id: productId, name: product.name, price: product.price, image: product.image, quantity: quantity });
-              }
+            };
+          });
+        }
+        
+        function updateCart(id, qty) {
+          const idx = cart.findIndex(i => i.id === id);
+          if (idx > -1) {
+            if (qty > 0) cart[idx].quantity = qty;
+            else cart.splice(idx, 1);
+          } else if (qty > 0) {
+            const p = productsData.find(p => p.id === id);
+            if (p) cart.push({ id, name: p.name, price: p.price, image: p.image, quantity: qty });
           }
           saveCart();
-          renderProducts(); // Re-render to update the input values
-      }
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const navLinksDiv = document.querySelector('.nav-links');
+          renderProducts();
+        }
+        
+        // Image gallery logic
+        function showThumbnails(img) {
+          const folder = img.dataset.folder;
+          const count = +img.dataset.count || 1;
+          const productId = img.dataset.productId;
+          const container = $(`thumbnails-${productId}`);
+        
+          if (!container.classList.contains('hidden')) return container.classList.add('hidden');
+        
+          container.innerHTML = '';
+          for (let i = 2; i <= count; i++) {
+            const thumb = document.createElement('img');
+            thumb.src = `${folder}/${i}.JPG`;
+            thumb.className = 'w-20 h-20 object-cover cursor-pointer rounded hover:ring-2 ring-orange-500';
+            thumb.onclick = () => img.src = `${folder}/${i}.JPG`;
+            container.appendChild(thumb);
+          }
+          container.classList.remove('hidden');
+        }
+        
+        // Init
+        renderProducts();
+        updateCartCount();
+        function showThumbnails(imgElement) {
+    const folder = imgElement.dataset.folder;
+    const count = parseInt(imgElement.dataset.count);
+    const popupOverlay = $('image-popup-overlay');
+    const popupImage = $('popup-image');
+    const thumbnailContainer = $('thumbnail-container');
 
-    mobileMenuButton.addEventListener('click', () => {
-        navLinksDiv.classList.toggle('open');
-    });
-      // Initial rendering
-      renderProducts();
-      updateCartCount();
+    // Show popup and set initial full image
+    popupOverlay.classList.remove('hidden');
+    popupImage.src = `${folder}/1.JPG`;
 
-      // Apply initial filters if needed (e.g., if there are query parameters)
-      // applyFilters();
-    </script>
+    // Clear previous thumbnails
+    thumbnailContainer.innerHTML = '';
+
+    // Generate and append new thumbnails
+    for (let i = 1; i <= count; i++) {
+      const thumb = document.createElement('img');
+      thumb.src = `${folder}/${i}.JPG`;
+      thumb.className = 'w-20 h-20 object-cover cursor-pointer border-2 border-transparent hover:border-pink-500 rounded';
+      thumb.onclick = () => {
+        popupImage.src = `${folder}/${i}.JPG`;
+      };
+      thumbnailContainer.appendChild(thumb);
+    }
+  }
+
+  // Close popup
+  $('close-popup').onclick = () => {
+    $('image-popup-overlay').classList.add('hidden');
+    $('popup-image').src = '';
+    $('thumbnail-container').innerHTML = '';
+  };
+        </script>
+        
 
 </body>
 </html>
