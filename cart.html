@@ -297,7 +297,7 @@
             cart.forEach((item, index) => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
-                const imageName = item.name.replace(/[^a-zA-Z0-9]/g, ' ').trim().replace(/\s+/g, '-').toLowerCase();
+                const imageName = item.name.replace(/[^a-zA-Z0-9]/g, ' ').trim().replace(/\s+/g, '-');
                 const imagePath = `images/${imageName}/1.jpg`;
 
                 const itemHTML = `
