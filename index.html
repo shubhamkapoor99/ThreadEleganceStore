@@ -147,7 +147,8 @@
 
                         <!-- Mobile Hamburger Button -->
                         <div class="md:hidden flex items-center">
-                            <button id="mobile-menu-button" class="text-gray-800 focus:outline-none bg-white/90 backdrop-blur-md">
+                            <button id="mobile-menu-button"
+                                class="text-gray-800 focus:outline-none bg-white/90 backdrop-blur-md">
                                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 6h16M4 12h16M4 18h16" />
@@ -293,7 +294,11 @@
 
         function updateCartCountDisplay() {
             const cart = getCart();
-            cartCount.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            document.querySelectorAll('#cart-count, #cart-count-mobile').forEach(el => {
+                el.innerText = count;
+            });
         }
 
         // Initialize cart count

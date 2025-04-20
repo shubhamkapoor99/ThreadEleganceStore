@@ -270,7 +270,9 @@ resetFiltersBtn.addEventListener('click', resetFilters);
       }
 
       function updateCartCount() {
-          cartCountSpan.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const cart = getCart();
+            document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count-mobile').innerText = document.getElementById('cart-count').innerText;
       }
 
       function renderProducts() {

@@ -146,19 +146,26 @@
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-
+    
         mobileMenuBtn.addEventListener('click', () => {
             mobileMenu.classList.toggle('hidden');
         });
-
+    
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    
             const cartCountSpan = document.getElementById('cart-count');
+            const cartCountMobile = document.getElementById('cart-count-mobile');
+    
             if (cartCountSpan) {
-                cartCountSpan.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+                cartCountSpan.innerText = count;
+            }
+            if (cartCountMobile) {
+                cartCountMobile.innerText = count;
             }
         }
-
+    
         updateCartCount();
     </script>
 </body>
