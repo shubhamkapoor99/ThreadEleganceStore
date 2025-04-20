@@ -383,6 +383,7 @@
                     updateCartCount();
                 };
             });
+            setupImagePopups();
         }
 
         function updateQuantity(index, delta) {
@@ -429,52 +430,37 @@
         updateCartCount();
         renderCart();
 
-        const imagePopupOverlay = document.getElementById('image-popup-overlay');
-        const popupImage = document.getElementById('popup-image');
-        const thumbnailContainer = document.getElementById('thumbnail-container');
-        const closePopup = document.getElementById('close-popup');
+        function setupImagePopups() {
+    const popupOverlay = document.getElementById('image-popup-overlay');
+    const popupImage = document.getElementById('popup-image');
+    const closePopup = document.getElementById('close-popup');
+    const thumbnailContainer = document.getElementById('thumbnail-container');
 
-        const mainImages = document.querySelectorAll('.popup-image');
+    document.querySelectorAll('.popup-image').forEach(img => {
+        img.addEventListener('click', () => {
+            const folder = img.getAttribute('data-folder');
+            popupImage.src = `images/${folder}/1.jpg`;
 
-        mainImages.forEach((mainImg) => {
-            mainImg.addEventListener('click', () => {
-                const folder = mainImg.dataset.folder;
-                const mainImagePath = `images/${folder}/1.jpg`;
-                popupImage.src = mainImagePath;
-                imagePopupOverlay.classList.remove('hidden');
-
-                // Clear old thumbnails
-                thumbnailContainer.innerHTML = '';
-
-                // Load images dynamically from 2.jpg to 6.jpg (customize range as needed)
-                for (let i = 1; i <= 6; i++) {
-                    const thumbPath = `images/${folder}/${i}.jpg`;
-                    const thumb = document.createElement('img');
-                    thumb.src = thumbPath;
-                    thumb.className = 'w-16 h-16 object-cover cursor-pointer rounded hover:scale-105 transition';
-                    thumb.addEventListener('click', () => {
-                        popupImage.src = thumbPath;
-                    });
-                    thumbnailContainer.appendChild(thumb);
-                }
-            });
-        });
-
-        closePopup.addEventListener('click', () => {
-            imagePopupOverlay.classList.add('hidden');
-        });
-
-        imagePopupOverlay.addEventListener('click', (e) => {
-            if (e.target === imagePopupOverlay) {
-                imagePopupOverlay.classList.add('hidden');
+            thumbnailContainer.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const thumb = document.createElement('img');
+                thumb.src = `images/${folder}/${i}.jpg`;
+                thumb.className = "w-16 h-16 object-cover cursor-pointer rounded border border-gray-300 hover:border-pink-500";
+                thumb.addEventListener('click', () => {
+                    popupImage.src = `images/${folder}/${i}.jpg`;
+                });
+                thumbnailContainer.appendChild(thumb);
             }
-        });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                imagePopupOverlay.classList.add('hidden');
-            }
+            popupOverlay.classList.remove('hidden');
         });
+    });
+
+    closePopup.addEventListener('click', () => {
+        popupOverlay.classList.add('hidden');
+    });
+}
+
     </script>
 
 </body>
