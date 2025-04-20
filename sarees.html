@@ -385,9 +385,9 @@
           container.innerHTML = '';
           for (let i = 2; i <= count; i++) {
             const thumb = document.createElement('img');
-            thumb.src = `${folder}/${i}.JPG`;
+            thumb.src = `${folder}/${i}.jpg`;
             thumb.className = 'w-20 h-20 object-cover cursor-pointer rounded hover:ring-2 ring-orange-500';
-            thumb.onclick = () => img.src = `${folder}/${i}.JPG`;
+            thumb.onclick = () => img.src = `${folder}/${i}.jpg`;
             container.appendChild(thumb);
           }
           container.classList.remove('hidden');
@@ -405,7 +405,7 @@
 
     // Show popup and set initial full image
     popupOverlay.classList.remove('hidden');
-    popupImage.src = `${folder}/1.JPG`;
+    popupImage.src = `${folder}/1.jpg`;
 
     // Clear previous thumbnails
     thumbnailContainer.innerHTML = '';
@@ -413,10 +413,10 @@
     // Generate and append new thumbnails
     for (let i = 1; i <= count; i++) {
       const thumb = document.createElement('img');
-      thumb.src = `${folder}/${i}.JPG`;
+      thumb.src = `${folder}/${i}.jpg`;
       thumb.className = 'w-20 h-20 object-cover cursor-pointer border-2 border-transparent hover:border-pink-500 rounded';
       thumb.onclick = () => {
-        popupImage.src = `${folder}/${i}.JPG`;
+        popupImage.src = `${folder}/${i}.jpg`;
       };
       thumbnailContainer.appendChild(thumb);
     }
