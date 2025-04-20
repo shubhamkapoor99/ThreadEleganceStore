@@ -305,29 +305,39 @@
                 const imagePath = `images/${imageName}/1.jpg`;
 
                 const itemHTML = `
-                    <div class="border p-4 rounded shadow flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <img src="${imagePath}" alt="${item.name}" class="w-full h-16 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="${imageName}">
-                            <div>
-                                <h4 class="font-semibold">${item.name}</h4>
-                                <p class="text-sm text-gray-500">₹${item.price}</p>
-                                <div class="flex items-center mt-2 space-x-2">
-                                    <button class="decrement-btn" data-index="${index}"><i class="fas fa-minus"></i></button>
-                                    <input type="number" class="quantity-input w-12 text-center border rounded" value="${item.quantity}" min="1" data-index="${index}">
-                                    <button class="increment-btn" data-index="${index}"><i class="fas fa-plus"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm text-gray-600">Qty: <span>${item.quantity}</span></p>
-                            <p class="text-pink-600 font-semibold">₹${itemTotal}</p>
-                            <button class="remove-from-cart text-red-500 hover:text-red-700 mt-2" data-index="${index}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                cartItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
+    <div class="border p-4 rounded shadow flex items-center justify-between space-x-4">
+        <!-- Image and Text Section -->
+        <div class="flex items-center space-x-4 flex-1">
+            <img src="${imagePath}" alt="${item.name}" class="w-16 h-16 object-cover cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-2xl popup-image" data-folder="${imageName}">
+            <div>
+                <h4 class="font-semibold text-lg">${item.name}</h4>
+                <p class="text-sm text-gray-500">₹${item.price}</p>
+            </div>
+        </div>
+
+        <!-- Quantity and Price Section -->
+        <div class="flex items-center justify-between space-x-4 flex-1">
+            <div class="flex items-center space-x-2">
+                <button class="decrement-btn" data-index="${index}"><i class="fas fa-minus"></i></button>
+                <input type="number" class="quantity-input w-12 text-center border rounded" value="${item.quantity}" min="1" data-index="${index}">
+                <button class="increment-btn" data-index="${index}"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">Qty: <span>${item.quantity}</span></p>
+                <p class="text-pink-600 font-semibold">₹${itemTotal}</p>
+            </div>
+        </div>
+
+        <!-- Remove Button Section -->
+        <div class="flex-shrink-0">
+            <button class="remove-from-cart text-red-500 hover:text-red-700 mt-2" data-index="${index}">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+`;
+
+cartItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
             });
 
             totalElement.innerText = `Total: ₹${total}`;
