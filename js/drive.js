@@ -1,0 +1,268 @@
+/* =====================================================================
+   drive.js  -  Auto-load the saree catalog from a public Google Drive
+   folder. Groups images by "<group>_<n>" and reads "<group>.txt".
+   Falls back to demo products when Drive isn't configured.
+   ===================================================================== */
+
+const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
+
+/* ---- helpers ---------------------------------------------------- */
+
+// Direct, no-CORS-needed image URLs for a PUBLIC Drive file (works in <img>).
+// NOTE: the file/folder must be shared "Anyone with the link -> Viewer",
+// otherwise every one of these returns 403 / a sign-in page and the <img>
+// falls back to the placeholder.
+function driveImageUrl(id, size = 1600) {
+  // lh3 tends to be the most reliable for real photos at larger sizes.
+  return `https://lh3.googleusercontent.com/d/${id}=w${size}`;
+}
+
+// Alternate endpoint, used as an automatic onerror fallback.
+function driveImageUrlAlt(id, size = 1600) {
+  return `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;
+}
+
+// Global <img> error handler: try the alternate Drive endpoint once, then
+// finally fall back to a neutral placeholder. Usage in markup:
+//   onerror="window.driveImgError(this)"  data-alt="<alternate url>"
+window.driveImgError = function (img) {
+  const alt = img.getAttribute("data-alt");
+  if (alt && !img.dataset.triedAlt) {
+    img.dataset.triedAlt = "1";
+    img.src = alt;
+    return;
+  }
+  img.onerror = null;
+  img.src = "https://placehold.co/600x800/f3ebe0/8a7c80?text=Saree";
+  img.classList.add("loaded");
+};
+
+// A small map so color names render as a coloured swatch.
+const COLOR_SWATCHES = {
+  red: "#c0392b", maroon: "#7b1e2b", pink: "#e84393", magenta: "#c2185b",
+  orange: "#e67e22", yellow: "#f1c40f", gold: "#d4af37", cream: "#f5e6c8",
+  beige: "#d8c3a5", brown: "#8d5524", green: "#2e7d32", olive: "#808000",
+  teal: "#008080", blue: "#1f6feb", navy: "#1b264f", purple: "#6c3483",
+  violet: "#7d3c98", lavender: "#b57edc", grey: "#7f8c8d", gray: "#7f8c8d",
+  black: "#222222", white: "#f8f8f8", silver: "#c0c0c0", peach: "#ffcba4",
+  mustard: "#e1ad01", rust: "#b7410e", wine: "#722f37",
+};
+
+function colorToSwatch(name = "") {
+  const key = name.trim().toLowerCase().split(/[\s/,-]/)[0];
+  return COLOR_SWATCHES[key] || "#b08d57";
+}
+
+/* ---- .txt parsing ----------------------------------------------- */
+
+function parseInfoText(text, group) {
+  const result = {
+    name: `Saree ${group}`,
+    color: "Assorted",
+    price: 0,
+    details: "",
+  };
+  if (!text) return result;
+
+  const lines = text.replace(/\r/g, "").split("\n");
+  const detailParts = [];
+  let firstNonKeyLineUsedAsColor = false;
+  let sawAnyKey = false;
+
+  lines.forEach((raw) => {
+    const line = raw.trim();
+    if (!line) return;
+    const m = line.match(/^([a-zA-Z ]+?)\s*[:\-]\s*(.*)$/);
+    if (m) {
+      const key = m[1].trim().toLowerCase();
+      const val = m[2].trim();
+      if (key === "color" || key === "colour") { result.color = val; sawAnyKey = true; return; }
+      if (key === "name" || key === "title") { result.name = val; sawAnyKey = true; return; }
+      if (key === "price" || key === "cost" || key === "mrp") {
+        const num = parseInt(val.replace(/[^\d]/g, ""), 10);
+        if (!isNaN(num)) result.price = num;
+        sawAnyKey = true; return;
+      }
+      if (key === "details" || key === "description" || key === "desc" || key === "blouse") {
+        if (val) detailParts.push(val);
+        sawAnyKey = true; return;
+      }
+    }
+    // Plain line (no recognised key)
+    if (!firstNonKeyLineUsedAsColor && !sawAnyKey && result.color === "Assorted") {
+      result.color = line;
+      firstNonKeyLineUsedAsColor = true;
+    } else {
+      detailParts.push(line);
+    }
+  });
+
+  result.details = detailParts.join(" ").trim();
+  return result;
+}
+
+/* ---- Drive REST calls ------------------------------------------- */
+
+async function listDriveFiles(folderId, apiKey) {
+  const files = [];
+  let pageToken = "";
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed=false`,
+      key: apiKey,
+      fields: "nextPageToken, files(id,name,mimeType)",
+      pageSize: "1000",
+      orderBy: "name_natural",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const res = await fetch(`${DRIVE_API}?${params.toString()}`);
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Drive API ${res.status}: ${txt}`);
+    }
+    const data = await res.json();
+    files.push(...(data.files || []));
+    pageToken = data.nextPageToken || "";
+  } while (pageToken);
+  return files;
+}
+
+async function fetchTextFile(id, apiKey) {
+  try {
+    const res = await fetch(`${DRIVE_API}/${id}?alt=media&key=${apiKey}`);
+    if (!res.ok) return "";
+    return await res.text();
+  } catch (e) {
+    return "";
+  }
+}
+
+/* ---- Apps Script source (no API key needed) --------------------- */
+// Expects the web app to return JSON: [{ name, id, text? }, ...]
+async function listViaAppsScript(url) {
+  const res = await fetch(url, { redirect: "follow" });
+  if (!res.ok) throw new Error(`Apps Script ${res.status}`);
+  const data = await res.json();
+  const files = Array.isArray(data) ? data : (data.files || []);
+  return files.map((f) => ({ name: f.name, id: f.id, text: f.text }));
+}
+
+/* ---- group files into products (shared by both sources) --------- */
+async function assembleProducts(files, fetchText) {
+  const groups = {};   // group -> { images:[{n,id}], txtId, txtText }
+  const imageRe = /^(\w+?)_(\d+)\.(jpe?g|png|webp|gif|avif)$/i;
+  const singleRe = /^(\w+?)\.(jpe?g|png|webp|gif|avif)$/i;
+  const txtRe = /^(\w+?)\.txt$/i;
+
+  for (const f of files) {
+    let m;
+    if ((m = f.name.match(imageRe))) {
+      const g = m[1], n = parseInt(m[2], 10);
+      (groups[g] ||= { images: [], txtId: null, txtText: undefined }).images.push({ n, id: f.id });
+    } else if ((m = f.name.match(singleRe))) {
+      const g = m[1];
+      (groups[g] ||= { images: [], txtId: null, txtText: undefined }).images.push({ n: 1, id: f.id });
+    } else if ((m = f.name.match(txtRe))) {
+      const g = m[1];
+      const grp = (groups[g] ||= { images: [], txtId: null, txtText: undefined });
+      grp.txtId = f.id;
+      if (typeof f.text === "string") grp.txtText = f.text;   // inline text (Apps Script)
+    }
+  }
+
+  const groupKeys = Object.keys(groups);
+  const products = [];
+  await Promise.all(groupKeys.map(async (g) => {
+    const grp = groups[g];
+    if (!grp.images.length) return;
+    grp.images.sort((a, b) => a.n - b.n);
+    let raw = grp.txtText;
+    if (raw === undefined && grp.txtId && fetchText) raw = await fetchText(grp.txtId);
+    const info = parseInfoText(raw || "", g);
+    products.push({
+      id: `g${g}`,
+      group: g,
+      name: info.name,
+      color: info.color,
+      colorSwatch: colorToSwatch(info.color),
+      price: info.price,
+      details: info.details,
+      cover: driveImageUrl(grp.images[0].id, 800),
+      coverAlt: driveImageUrlAlt(grp.images[0].id, 800),
+      images: grp.images.map((im) => driveImageUrl(im.id, 1600)),
+      imagesAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 1600)),
+      thumbs: grp.images.map((im) => driveImageUrl(im.id, 220)),
+      thumbsAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 220)),
+    });
+  }));
+
+  products.sort((a, b) => {
+    const na = parseInt(a.group, 10), nb = parseInt(b.group, 10);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(a.group).localeCompare(String(b.group));
+  });
+  return products;
+}
+
+/* ---- main loader ------------------------------------------------- */
+
+async function loadProductsFromDrive() {
+  const cfg = window.STORE_CONFIG.drive || {};
+
+  // Option A (recommended): Google Apps Script web app — no API key needed.
+  if (cfg.appsScriptUrl) {
+    const files = await listViaAppsScript(cfg.appsScriptUrl);
+    const products = await assembleProducts(files, null);
+    return { products, demo: false };
+  }
+
+  // Option B: Drive API key.
+  if (cfg.apiKey && cfg.folderId) {
+    const files = await listDriveFiles(cfg.folderId, cfg.apiKey);
+    const products = await assembleProducts(
+      files, (id) => fetchTextFile(id, cfg.apiKey)
+    );
+    return { products, demo: false };
+  }
+
+  // Not configured yet.
+  if (window.STORE_CONFIG.showDemoWhenUnconfigured) {
+    return { products: demoProducts(), demo: true };
+  }
+  return { products: [], demo: false, unconfigured: true };
+}
+
+/* ---- demo data (used before Drive is configured) ---------------- */
+
+function demoProducts() {
+  const demo = [
+    { name: "Kanchipuram Silk Saree", color: "Maroon", price: 12999, seed: "kanchi",
+      details: "Luxurious pure-silk saree with golden zari border. Paired with a contrast temple-motif blouse piece." },
+    { name: "Banarasi Georgette Saree", color: "Blue", price: 9499, seed: "banarasi",
+      details: "Soft flowing georgette woven with delicate golden motifs and a matching blouse." },
+    { name: "Tussar Handloom Saree", color: "Green", price: 7299, seed: "tussar",
+      details: "Earthy handloom tussar with artisan finish and an unstitched blouse piece." },
+    { name: "Royal Wedding Saree", color: "Red", price: 18999, seed: "royal",
+      details: "Bridal red silk with heavy zari work, ideal for weddings. Includes designer blouse." },
+    { name: "Pastel Organza Saree", color: "Pink", price: 6499, seed: "organza",
+      details: "Sheer pastel organza with floral prints and a soft satin blouse." },
+    { name: "Mustard Cotton Saree", color: "Mustard", price: 3499, seed: "cotton",
+      details: "Breezy daily-wear cotton in warm mustard tones with a simple blouse." },
+  ];
+  return demo.map((d, i) => {
+    const imgs = [1, 2, 3].map((n) =>
+      `https://picsum.photos/seed/${d.seed}${n}/900/1200`);
+    const thumbs = [1, 2, 3].map((n) =>
+      `https://picsum.photos/seed/${d.seed}${n}/220/300`);
+    return {
+      id: `demo${i + 1}`, group: String(i + 1), name: d.name, color: d.color,
+      colorSwatch: colorToSwatch(d.color), price: d.price, details: d.details,
+      cover: `https://picsum.photos/seed/${d.seed}1/800/1066`,
+      coverAlt: `https://picsum.photos/seed/${d.seed}1/800/1066`,
+      images: imgs, imagesAlt: imgs, thumbs, thumbsAlt: thumbs,
+    };
+  });
+}
+
+window.loadProductsFromDrive = loadProductsFromDrive;
+window.colorToSwatch = colorToSwatch;
