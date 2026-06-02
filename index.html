@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreadElegance Store</title>
+  <meta name="description" content="Timeless elegance, woven in silk. Discover handpicked traditional & contemporary sarees." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="loader"><div class="ring"></div></div>
+  <header data-chrome="header"></header>
+
+  <!-- ============ HERO (3D) ============ -->
+  <section class="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <span class="hero-kicker">Handwoven · Heritage · Luxury</span>
+      <h1><span class="em">"Saree Is An Emotion"</span></h1>
+      <p>Explore a curated collection of traditional and contemporary sarees — draped in craftsmanship, finished with grace.</p>
+      <div class="hero-cta">
+        <a href="products.html" class="btn btn-gold">Shop the Collection</a>
+        <a href="about.html" class="btn btn-ghost">Our Story</a>
+      </div>
+    </div>
+
+    <div class="scroll-hint">Scroll<span></span></div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="kicker">Why ThreadElegance</span>
+        <h2>Crafted for the Connoisseur</h2>
+        <p>Five decades of curating the finest weaves from across India.</p>
+      </div>
+      <div class="features">
+        <div class="feature reveal">
+          <div class="ic">✦</div><h4>Pure Handloom</h4>
+          <p>Every saree is sourced from master weavers and verified for authenticity.</p>
+        </div>
+        <div class="feature reveal d1">
+          <div class="ic">❖</div><h4>Matching Blouse</h4>
+          <p>Most sarees include a coordinated blouse piece, detailed in each listing.</p>
+        </div>
+        <div class="feature reveal d2">
+          <div class="ic">♛</div><h4>Heritage Since 1975</h4>
+          <p>A trusted name from Chandni Chowk, Delhi — now delivered to your doorstep.</p>
+        </div>
+        <div class="feature reveal d3">
+          <div class="ic">✉</div><h4>Order on WhatsApp</h4>
+          <p>Simple, personal checkout — confirm your order directly with our team.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURED PRODUCTS ============ -->
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="kicker">Handpicked</span>
+        <h2>Featured Sarees</h2>
+        <p>A glimpse of what's waiting in the collection.</p>
+      </div>
+      <div id="featured-grid" class="product-grid"></div>
+      <div class="center" style="margin-top:46px">
+        <a href="products.html" class="btn btn-primary">View All Sarees</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA BAND ============ -->
+  <section class="section" style="padding:0">
+    <div class="container">
+      <div class="reveal" style="background:radial-gradient(120% 160% at 0% 0%, #5b0e2d, #3d0a1f);border-radius:28px;padding:64px 40px;text-align:center;color:#fff;box-shadow:var(--shadow-md)">
+        <h2 style="font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:14px">Find Your Perfect Drape</h2>
+        <p style="color:rgba(255,255,255,.8);max-width:560px;margin:0 auto 28px">Tell us your occasion and colour — we'll help you choose the saree that's meant for you.</p>
+        <a href="contact.html" class="btn btn-gold">Talk to a Stylist</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Gallery modal (shared with Products page) ===== -->
+  <div class="modal" id="gallery-modal">
+    <div class="modal-bg"></div>
+    <div class="modal-card">
+      <button class="modal-close" data-mclose>&times;</button>
+      <div class="modal-gallery">
+        <div class="mg-stage">
+          <button class="mg-arrow prev" aria-label="Previous">‹</button>
+          <img data-mstage src="" alt="Saree image">
+          <button class="mg-arrow next" aria-label="Next">›</button>
+        </div>
+        <div class="mg-thumbs" data-mthumbs></div>
+      </div>
+      <div class="modal-info">
+        <h2 data-mtitle>Saree</h2>
+        <span class="m-color"><span class="dot" data-mcolor-dot></span><span data-mcolor></span></span>
+        <p class="m-details" data-mdetails></p>
+        <div class="m-price gold-text" data-mprice></div>
+        <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer" data-chrome="footer"></footer>
+
+  <!-- scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/drive.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/gallery.js"></script>
+  <script>renderChrome("index.html");</script>
+
+  <!-- featured products -->
+  <script>
+    (async function () {
+      const grid = document.getElementById("featured-grid");
+      grid.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line"></div><div class="sk-line short"></div></div></div>`.repeat(3);
+      try {
+        const { products } = await window.loadProductsFromDrive();
+        const top = products.slice(0, 3);
+        if (!top.length) {
+          grid.style.display = "block";
+          grid.innerHTML = `<div class="notice">Your sarees will appear here once your Google Drive is connected.<br>
+            <small>Add your API key in <b>js/config.js</b> — see README.</small></div>`;
+          return;
+        }
+        grid.innerHTML = top.map((p) => `
+          <div class="card reveal" data-id="${p.id}">
+            <div class="card-inner">
+              <div class="card-media">
+                <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy"
+                  data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
+                  onload="this.classList.add('loaded')"
+                  onerror="window.driveImgError(this)">
+                <span class="shine"></span>
+                <span class="badge-color"><span class="dot" style="background:${p.colorSwatch}"></span>${p.color}</span>
+                <button class="card-view" data-view="${p.id}">View Gallery</button>
+              </div>
+              <div class="card-body">
+                <h3>${p.name}</h3>
+                <p class="desc">${p.details || "Exquisite handpicked saree with matching blouse."}</p>
+                <div class="card-foot">
+                  <span class="price">${p.price ? window.money(p.price) : "<small>Price on request</small>"}</span>
+                  <a href="products.html" class="btn btn-outline" style="padding:9px 18px;font-size:.82rem">View</a>
+                </div>
+              </div>
+            </div>
+          </div>`).join("");
+
+        // open the shared gallery modal from the cover or the "View Gallery" button
+        const openFor = (id) => { const p = top.find((x) => x.id === id); if (p) window.openGallery(p); };
+        grid.querySelectorAll("[data-view]").forEach((b) =>
+          b.addEventListener("click", (e) => { e.stopPropagation(); openFor(b.dataset.view); }));
+        grid.querySelectorAll(".card-media img").forEach((img) =>
+          img.addEventListener("click", () => openFor(img.closest(".card").dataset.id)));
+
+        window.initReveal(grid); window.initTilt(grid);
+      } catch (e) {
+        grid.style.display = "block";
+        grid.innerHTML = `<div class="notice">Configure Google Drive in <b>js/config.js</b> to show your sarees here.</div>`;
+      }
+    })();
+  </script>
+
+  <!-- 3D hero (module) -->
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+  <script type="module" src="js/three-hero.js"></script>
+</body>
+</html>

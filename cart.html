@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Cart — ThreadElegance Store</title>
+  <meta name="description" content="Review your selected sarees and place your order on WhatsApp." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="loader"><div class="ring"></div></div>
+  <header data-chrome="header"></header>
+
+  <section class="page-hero" style="padding:140px 0 50px">
+    <div class="container">
+      <h1>Your Cart</h1>
+      <p>Review your selection, add your details, and place the order on WhatsApp.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:50px">
+    <div class="container">
+      <div class="cart-wrap">
+        <div id="cart-items"></div>
+        <div id="cart-summary"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" data-chrome="footer"></footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/drive.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script>renderChrome("cart.html");</script>
+  <script src="js/cart.js"></script>
+</body>
+</html>
