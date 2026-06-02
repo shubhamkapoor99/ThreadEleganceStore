@@ -7,6 +7,15 @@ const CART_KEY = "cart";
 const CFG = window.STORE_CONFIG;
 const money = (n) => `${CFG.currency}${Number(n || 0).toLocaleString("en-IN")}`;
 
+/* ---------- pricing switch (single source of truth) ----------------
+   Driven by STORE_CONFIG.priceDisplay ("ON" / "OFF"). Every page reads
+   window.SHOW_PRICE so flipping the config value updates the whole site. */
+const SHOW_PRICE = String(CFG.priceDisplay ?? "ON").trim().toUpperCase() !== "OFF";
+const PRICE_HIDDEN_TEXT = "Calculated on WhatsApp";
+// Plain-text price for one product: respects the switch and the "no price" case.
+const priceLabel = (price) =>
+  !SHOW_PRICE ? PRICE_HIDDEN_TEXT : (price ? money(price) : "Price on request");
+
 /* ---------- robust persistence layer ------------------------------
    Tries localStorage first; if it's unavailable or blocked (private
    mode, strict privacy settings, some file:// contexts) it falls back
@@ -76,7 +85,7 @@ function addToCart(item, qty = 1) {
 // Normalize a catalog product into the minimal shape stored in the cart.
 function productCartShape(p) {
   return {
-    id: p.id, name: p.name, price: p.price, color: p.color,
+    id: p.id, group: p.group, name: p.name, price: p.price, color: p.color,
     colorSwatch: p.colorSwatch, image: p.cover || (p.images && p.images[0]),
   };
 }
@@ -126,16 +135,20 @@ function buildWhatsAppOrder(shipping) {
     msg += `*Name:* ${shipping.name}\n`;
     msg += `*Floor/Unit:* ${shipping.floor}\n`;
     msg += `*Area:* ${shipping.area}\n`;
-    msg += `*State:* ${shipping.state}\n\n`;
+    msg += `*State:* ${shipping.state}\n`;
+    msg += `*Country:* ${shipping.country || "India"}\n\n`;
   }
   msg += `*Items:*\n`;
   cart.forEach((it, i) => {
-    const line = it.price
-      ? `${money(it.price * it.quantity)}`
-      : "Price on request";
-    msg += `${i + 1}. ${it.name}  (${it.color || "—"})  x${it.quantity}  — ${line}\n`;
+    const line = SHOW_PRICE
+      ? (it.price ? `${money(it.price * it.quantity)}` : "Price on request")
+      : PRICE_HIDDEN_TEXT;
+    const code = (it.group !== undefined && it.group !== null && it.group !== "")
+      ? `\n   Code: ${it.group}`
+      : "";
+    msg += `${i + 1}. ${it.name}  x${it.quantity}  — ${line}${code}\n`;
   });
-  msg += `\n*Total:* ${money(cartTotal())}`;
+  msg += `\n*Total:* ${SHOW_PRICE ? money(cartTotal()) : PRICE_HIDDEN_TEXT}`;
   return `https://wa.me/${CFG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -267,4 +280,5 @@ Object.assign(window, {
   getCart, setCart, addToCart, setQuantity, removeFromCart, clearCart,
   cartCount, cartTotal, updateCartCount, buildWhatsAppOrder, renderChrome, money,
   productCartShape, addOneToCart,
+  SHOW_PRICE, PRICE_HIDDEN_TEXT, priceLabel,
 });

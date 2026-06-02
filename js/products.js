@@ -4,10 +4,8 @@
    ===================================================================== */
 
 let ALL_PRODUCTS = [];
-let activeColor = "all";
 
 const grid = document.getElementById("product-grid");
-const chipsWrap = document.getElementById("color-chips");
 const sortSel = document.getElementById("sort-select");
 const countLabel = document.getElementById("result-count");
 
@@ -46,7 +44,6 @@ async function init() {
       Upload images named <b>1_1.jpg, 1_2.jpg…</b> and a <b>1.txt</b> file to start.</div>`;
     return;
   }
-  buildColorChips();
   render();
 }
 
@@ -60,30 +57,8 @@ function showSkeleton() {
   }
 }
 
-function buildColorChips() {
-  const colors = [...new Set(ALL_PRODUCTS.map((p) => p.color).filter(Boolean))];
-  const chip = (label, value, swatch) => `
-    <button class="chip ${value === "all" ? "active" : ""}" data-color="${value}">
-      ${swatch ? `<span class="dot" style="background:${swatch}"></span>` : ""}${label}
-    </button>`;
-  chipsWrap.innerHTML =
-    chip("All Colors", "all", "") +
-    colors.map((c) => chip(c, c.toLowerCase(), window.colorToSwatch(c))).join("");
-
-  chipsWrap.querySelectorAll(".chip").forEach((b) => {
-    b.addEventListener("click", () => {
-      chipsWrap.querySelectorAll(".chip").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      activeColor = b.dataset.color;
-      render();
-    });
-  });
-}
-
 function getVisible() {
-  let list = ALL_PRODUCTS.filter(
-    (p) => activeColor === "all" || (p.color || "").toLowerCase() === activeColor
-  );
+  let list = [...ALL_PRODUCTS];
   const s = sortSel ? sortSel.value : "";
   if (s === "low") list = [...list].sort((a, b) => a.price - b.price);
   if (s === "high") list = [...list].sort((a, b) => b.price - a.price);
@@ -104,9 +79,11 @@ function render() {
   grid.innerHTML = list.map((p, i) => {
     const inCart = window.getCart().find((c) => c.id === p.id);
     const qty = inCart ? inCart.quantity : 0;
-    const priceHtml = p.price
-      ? `<span class="price">${window.money(p.price)}</span>`
-      : `<span class="price"><small>Price on request</small></span>`;
+    const priceHtml = window.SHOW_PRICE
+      ? (p.price
+          ? `<span class="price">${window.money(p.price)}</span>`
+          : `<span class="price"><small>Price on request</small></span>`)
+      : `<span class="price"><small>Price: Calculated on WhatsApp</small></span>`;
     return `
       <div class="card reveal ${i % 3 === 1 ? "d1" : i % 3 === 2 ? "d2" : ""}" data-id="${p.id}">
         <div class="card-inner">
@@ -116,7 +93,6 @@ function render() {
                  onload="this.classList.add('loaded')"
                  onerror="window.driveImgError(this)">
             <span class="shine"></span>
-            <span class="badge-color"><span class="dot" style="background:${p.colorSwatch}"></span>${p.color}</span>
             <button class="card-view" data-view="${p.id}">View Gallery</button>
           </div>
           <div class="card-body">

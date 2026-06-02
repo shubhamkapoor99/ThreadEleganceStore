@@ -38,7 +38,6 @@ function renderItems() {
            onerror="this.src='https://placehold.co/120x150/f3ebe0/8a7c80?text=Saree'">
       <div>
         <h4>${it.name}</h4>
-        <span class="ci-color"><span class="dot" style="background:${it.colorSwatch || '#b08d57'}"></span>${it.color || "—"}</span>
         <div class="qty" style="margin-top:12px" data-qty="${it.id}">
           <button data-step="-1">−</button>
           <input type="number" min="1" value="${it.quantity}" data-input="${it.id}">
@@ -46,7 +45,9 @@ function renderItems() {
         </div>
       </div>
       <div class="ci-right">
-        <div class="price">${it.price ? window.money(it.price * it.quantity) : "<small>On request</small>"}</div>
+        <div class="price">${window.SHOW_PRICE
+          ? (it.price ? window.money(it.price * it.quantity) : "<small>On request</small>")
+          : "<small>Price: Calculated on WhatsApp</small>"}</div>
         <button class="ci-remove" data-remove="${it.id}">✕ Remove</button>
       </div>
     </div>`).join("");
@@ -73,6 +74,12 @@ function buildSummary() {
               .map((s) => `<option value="${s}">${s}</option>`).join("")}
           </select>
         </div>
+        <div class="field full"><label>Country</label>
+          <select name="country" required>
+            ${["India","Australia","Bangladesh","Canada","Germany","Malaysia","Nepal","New Zealand","Pakistan","Singapore","South Africa","Sri Lanka","United Arab Emirates","United Kingdom","United States"]
+              .map((c) => `<option value="${c}"${c === "India" ? " selected" : ""}>${c}</option>`).join("")}
+          </select>
+        </div>
       </form>
 
       <button id="checkout-btn" class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px">
@@ -95,8 +102,9 @@ function updateTotals() {
   const items = window.cartCount();
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set("sum-items", items);
-  set("sum-subtotal", window.money(total));
-  set("sum-total", window.money(total));
+  const totalText = window.SHOW_PRICE ? window.money(total) : window.PRICE_HIDDEN_TEXT;
+  set("sum-subtotal", totalText);
+  set("sum-total", totalText);
 }
 
 function refresh() {           // update list + totals WITHOUT touching the form

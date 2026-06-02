@@ -1,16 +1,35 @@
 /* =====================================================================
    three-hero.js  -  WebGL hero: a flowing iridescent silk drape with
    floating golden dust + mouse parallax. Loaded as an ES module.
+
+   Performance: the Three.js library (~600 KB) is heavy, so we only load
+   it when it actually adds value. We SKIP it on phones/tablets, when the
+   user prefers reduced motion, or when Data Saver is on, and otherwise we
+   import it lazily once the browser is idle. The .hero section already has
+   a rich gradient background, so the page looks great even without WebGL.
    ===================================================================== */
-import * as THREE from "three";
 
 const canvas = document.getElementById("hero-canvas");
-if (canvas) {
-  try { initHero(canvas); }
-  catch (e) { console.warn("3D hero unavailable:", e); }
+
+const mq = (q) => window.matchMedia && window.matchMedia(q).matches;
+const prefersReduced = mq("(prefers-reduced-motion: reduce)");
+const isSmallOrTouch = mq("(max-width: 820px)") || mq("(pointer: coarse)");
+const saveData = !!(navigator.connection && navigator.connection.saveData);
+
+if (canvas && !prefersReduced && !isSmallOrTouch && !saveData) {
+  const startHero = () => {
+    import("three")
+      .then((THREE) => { try { initHero(canvas, THREE); } catch (e) { console.warn("3D hero unavailable:", e); } })
+      .catch((e) => console.warn("3D hero skipped:", e));
+  };
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(startHero, { timeout: 2500 });
+  } else {
+    setTimeout(startHero, 800);
+  }
 }
 
-function initHero(canvas) {
+function initHero(canvas, THREE) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 

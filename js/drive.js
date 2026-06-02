@@ -66,8 +66,8 @@ function parseInfoText(text, group) {
 
   const lines = text.replace(/\r/g, "").split("\n");
   const detailParts = [];
-  let firstNonKeyLineUsedAsColor = false;
-  let sawAnyKey = false;
+  let nameSet = false;          // an explicit Title/Name key was given
+  let firstPlainUsedAsName = false;
 
   lines.forEach((raw) => {
     const line = raw.trim();
@@ -76,22 +76,23 @@ function parseInfoText(text, group) {
     if (m) {
       const key = m[1].trim().toLowerCase();
       const val = m[2].trim();
-      if (key === "color" || key === "colour") { result.color = val; sawAnyKey = true; return; }
-      if (key === "name" || key === "title") { result.name = val; sawAnyKey = true; return; }
+      if (key === "name" || key === "title") { result.name = val; nameSet = true; return; }
+      if (key === "color" || key === "colour") { result.color = val; return; }
       if (key === "price" || key === "cost" || key === "mrp") {
         const num = parseInt(val.replace(/[^\d]/g, ""), 10);
         if (!isNaN(num)) result.price = num;
-        sawAnyKey = true; return;
+        return;
       }
       if (key === "details" || key === "description" || key === "desc" || key === "blouse") {
         if (val) detailParts.push(val);
-        sawAnyKey = true; return;
+        return;
       }
     }
-    // Plain line (no recognised key)
-    if (!firstNonKeyLineUsedAsColor && !sawAnyKey && result.color === "Assorted") {
-      result.color = line;
-      firstNonKeyLineUsedAsColor = true;
+    // Plain line (no recognised key): the FIRST one becomes the saree title
+    // (unless a Title/Name key was already given), the rest become details.
+    if (!nameSet && !firstPlainUsedAsName) {
+      result.name = line;
+      firstPlainUsedAsName = true;
     } else {
       detailParts.push(line);
     }

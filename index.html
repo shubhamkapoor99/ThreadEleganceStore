@@ -7,7 +7,8 @@
   <meta name="description" content="Timeless elegance, woven in silk. Discover handpicked traditional & contemporary sarees." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -102,7 +103,6 @@
       </div>
       <div class="modal-info">
         <h2 data-mtitle>Saree</h2>
-        <span class="m-color"><span class="dot" data-mcolor-dot></span><span data-mcolor></span></span>
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
         <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
@@ -134,37 +134,86 @@
             <small>Add your API key in <b>js/config.js</b> — see README.</small></div>`;
           return;
         }
-        grid.innerHTML = top.map((p) => `
-          <div class="card reveal" data-id="${p.id}">
-            <div class="card-inner">
-              <div class="card-media">
-                <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy"
-                  data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
-                  onload="this.classList.add('loaded')"
-                  onerror="window.driveImgError(this)">
-                <span class="shine"></span>
-                <span class="badge-color"><span class="dot" style="background:${p.colorSwatch}"></span>${p.color}</span>
-                <button class="card-view" data-view="${p.id}">View Gallery</button>
-              </div>
-              <div class="card-body">
-                <h3>${p.name}</h3>
-                <p class="desc">${p.details || "Exquisite handpicked saree with matching blouse."}</p>
-                <div class="card-foot">
-                  <span class="price">${p.price ? window.money(p.price) : "<small>Price on request</small>"}</span>
-                  <a href="products.html" class="btn btn-outline" style="padding:9px 18px;font-size:.82rem">View</a>
+        const renderFeatured = () => {
+          grid.innerHTML = top.map((p) => {
+            const inCart = window.getCart().find((c) => c.id === p.id);
+            const qty = inCart ? inCart.quantity : 0;
+            return `
+            <div class="card reveal" data-id="${p.id}">
+              <div class="card-inner">
+                <div class="card-media">
+                  <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy"
+                    data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
+                    onload="this.classList.add('loaded')"
+                    onerror="window.driveImgError(this)">
+                  <span class="shine"></span>
+                  <button class="card-view" data-view="${p.id}">View Gallery</button>
+                </div>
+                <div class="card-body">
+                  <h3>${p.name}</h3>
+                  <p class="desc">${p.details || "Exquisite handpicked saree with matching blouse."}</p>
+                  <div class="card-foot">
+                    <span class="price">${window.SHOW_PRICE ? (p.price ? window.money(p.price) : "<small>Price on request</small>") : "<small>Price: Calculated on WhatsApp</small>"}</span>
+                    <div class="qty" data-qty="${p.id}">
+                      <button data-step="-1">−</button>
+                      <input type="number" min="0" value="${qty}" data-input="${p.id}">
+                      <button data-step="1">+</button>
+                    </div>
+                  </div>
+                  <div class="add-line">
+                    <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>`).join("");
+            </div>`;
+          }).join("");
+          bindFeatured();
+          window.initReveal(grid); window.initTilt(grid);
+        };
 
-        // open the shared gallery modal from the cover or the "View Gallery" button
+        const commitQty = (p, q) => {
+          const exists = window.getCart().some((c) => c.id === p.id);
+          if (exists) window.setQuantity(p.id, q);
+          else if (q > 0) window.addToCart(window.productCartShape(p), q);
+        };
+
         const openFor = (id) => { const p = top.find((x) => x.id === id); if (p) window.openGallery(p); };
-        grid.querySelectorAll("[data-view]").forEach((b) =>
-          b.addEventListener("click", (e) => { e.stopPropagation(); openFor(b.dataset.view); }));
-        grid.querySelectorAll(".card-media img").forEach((img) =>
-          img.addEventListener("click", () => openFor(img.closest(".card").dataset.id)));
 
-        window.initReveal(grid); window.initTilt(grid);
+        function bindFeatured() {
+          grid.querySelectorAll("[data-view]").forEach((b) =>
+            b.addEventListener("click", (e) => { e.stopPropagation(); openFor(b.dataset.view); }));
+          grid.querySelectorAll(".card-media img").forEach((img) =>
+            img.addEventListener("click", () => openFor(img.closest(".card").dataset.id)));
+
+          grid.querySelectorAll("[data-qty]").forEach((q) => {
+            const input = q.querySelector("input");
+            q.querySelectorAll("button").forEach((btn) =>
+              btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                input.value = Math.max(0, (parseInt(input.value) || 0) + parseInt(btn.dataset.step));
+              }));
+            input.addEventListener("change", () => {
+              input.value = Math.max(0, parseInt(input.value) || 0);
+            });
+            input.addEventListener("click", (e) => e.stopPropagation());
+          });
+
+          grid.querySelectorAll("[data-add]").forEach((b) =>
+            b.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const p = top.find((x) => x.id === b.dataset.add);
+              const input = grid.querySelector(`[data-input="${p.id}"]`);
+              const qty = Math.max(1, parseInt(input.value) || 1);
+              input.value = qty;
+              commitQty(p, qty);
+              b.textContent = "Added ✓";
+              setTimeout(() => (b.textContent = "Add to Cart"), 1200);
+            }));
+        }
+
+        // keep steppers in sync after the shared gallery modal adds an item
+        window.onGalleryAdd = renderFeatured;
+        renderFeatured();
       } catch (e) {
         grid.style.display = "block";
         grid.innerHTML = `<div class="notice">Configure Google Drive in <b>js/config.js</b> to show your sarees here.</div>`;

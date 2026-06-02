@@ -9,11 +9,17 @@ window.STORE_CONFIG = {
   storeName: "ThreadElegance Store",
   tagline: "",
   whatsappNumber: "919711084312",        // country code + number, no "+" / spaces
-  email: "ThreadEleganceStore@gmail.com",
+  email: "thethreadelegancestore@gmail.com",
   phone: "+919711084312",
   instagram: "https://www.instagram.com/threadelegancestore/",
   address: "846-A, Katra Mahesh Das, Nai Sarak, Chandni Chowk, Delhi, India",
   currency: "₹",
+
+  /* ---- Pricing switch (single place, reflected everywhere) ----
+       "ON"  -> prices ARE displayed (products, gallery, cart, WhatsApp)
+       "OFF" -> prices are HIDDEN and shown as "Calculated on WhatsApp"
+     Change just this one value to flip pricing across the whole site. */
+  priceDisplay: "OFF",
 
   /* ---- Google Drive auto-catalog ----
      1. Put your photos + .txt files in ONE Drive folder.

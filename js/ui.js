@@ -3,11 +3,21 @@
    page loader fade-out, scroll-reveal, and 3D pointer tilt on cards.
    ===================================================================== */
 
-/* ----- page loader ----- */
-window.addEventListener("load", () => {
+/* ----- page loader -----
+   Hide as soon as the DOM is interactive instead of waiting for the full
+   `load` event (which also waits on the heavy 3D hero + remote Drive
+   images). A short safety timeout guarantees it never stays stuck. */
+function hideLoader() {
   const loader = document.querySelector(".loader");
-  if (loader) setTimeout(() => loader.classList.add("hide"), 350);
-});
+  if (loader) loader.classList.add("hide");
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", hideLoader);
+} else {
+  hideLoader();
+}
+window.addEventListener("load", hideLoader);
+setTimeout(hideLoader, 1500);
 
 /* ----- scroll reveal ----- */
 function initReveal(root = document) {
@@ -30,6 +40,9 @@ function attachTilt(card) {
   if (!inner) return;
   const MAX = 9; // degrees
   card.addEventListener("pointermove", (e) => {
+    // Freeze the card while the shopper is using the quantity stepper /
+    // add-to-cart controls so it doesn't tilt or zoom under the cursor.
+    if (card.classList.contains("interacting")) { inner.style.transform = ""; return; }
     const r = card.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
@@ -40,8 +53,19 @@ function attachTilt(card) {
     inner.style.transform = "";
   });
 }
+
+// Mark the card as "interacting" while the pointer is over the controls area,
+// which neutralizes the hover zoom + tilt (see .card.interacting in styles.css).
+function attachStableControls(card) {
+  const body = card.querySelector(".card-body");
+  if (!body) return;
+  body.addEventListener("pointerenter", () => card.classList.add("interacting"));
+  body.addEventListener("pointerleave", () => card.classList.remove("interacting"));
+}
+
 function initTilt(root = document) {
-  if (window.matchMedia("(pointer: coarse)").matches) return; // skip on touch
+  root.querySelectorAll(".card").forEach(attachStableControls);
+  if (window.matchMedia("(pointer: coarse)").matches) return; // skip tilt on touch
   root.querySelectorAll(".card").forEach(attachTilt);
 }
 

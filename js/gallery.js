@@ -19,13 +19,13 @@
     idx = 0;
 
     modal.querySelector("[data-mtitle]").textContent = p.name;
-    modal.querySelector("[data-mcolor-dot]").style.background = p.colorSwatch;
-    modal.querySelector("[data-mcolor]").textContent = p.color;
     modal.querySelector("[data-mdetails]").textContent =
       p.details || "Exquisite handpicked saree with a matching blouse piece.";
-    modal.querySelector("[data-mprice]").innerHTML = p.price
-      ? window.money(p.price)
-      : "<small style='font-size:1rem;color:var(--muted)'>Price on request</small>";
+    modal.querySelector("[data-mprice]").innerHTML = window.SHOW_PRICE
+      ? (p.price
+          ? window.money(p.price)
+          : "<small style='font-size:1rem;color:var(--muted)'>Price on request</small>")
+      : "<small style='font-size:1rem;color:var(--muted)'>Price: Calculated on WhatsApp</small>";
 
     const addBtn = modal.querySelector("[data-madd]");
     addBtn.onclick = () => {
