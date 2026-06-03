@@ -4,10 +4,12 @@
    ===================================================================== */
 
 let ALL_PRODUCTS = [];
+let ACTIVE_COLOR = "all";   // lowercased colour key, or "all"
 
 const grid = document.getElementById("product-grid");
 const sortSel = document.getElementById("sort-select");
 const countLabel = document.getElementById("result-count");
+const colorFilter = document.getElementById("color-filter");
 
 init();
 
@@ -44,7 +46,48 @@ async function init() {
       Upload images named <b>1_1.jpg, 1_2.jpg…</b> and a <b>1.txt</b> file to start.</div>`;
     return;
   }
+  buildColorFilter();
   render();
+}
+
+// Build the colour filter chips from the colours found in the saree .txt files.
+function buildColorFilter() {
+  if (!colorFilter) return;
+
+  const seen = new Map();   // lowercase key -> { label, swatch }
+  ALL_PRODUCTS.forEach((p) => {
+    const label = (p.color || "").trim();
+    if (!label) return;
+    const key = label.toLowerCase();
+    if (!seen.has(key)) {
+      seen.set(key, { label, swatch: p.colorSwatch || window.colorToSwatch(label) });
+    }
+  });
+
+  if (seen.size <= 1) {        // nothing useful to filter by
+    colorFilter.innerHTML = "";
+    return;
+  }
+
+  const chips = [`<button class="chip${ACTIVE_COLOR === "all" ? " active" : ""}" data-color="all">All</button>`];
+  [...seen.entries()]
+    .sort((a, b) => a[1].label.localeCompare(b[1].label))
+    .forEach(([key, { label, swatch }]) => {
+      chips.push(
+        `<button class="chip${ACTIVE_COLOR === key ? " active" : ""}" data-color="${key}">
+           <span class="dot" style="background:${swatch}"></span>${label}
+         </button>`
+      );
+    });
+  colorFilter.innerHTML = chips.join("");
+
+  colorFilter.querySelectorAll(".chip").forEach((chip) =>
+    chip.addEventListener("click", () => {
+      ACTIVE_COLOR = chip.dataset.color;
+      colorFilter.querySelectorAll(".chip").forEach((c) =>
+        c.classList.toggle("active", c.dataset.color === ACTIVE_COLOR));
+      render();
+    }));
 }
 
 function showSkeleton() {
@@ -59,6 +102,9 @@ function showSkeleton() {
 
 function getVisible() {
   let list = [...ALL_PRODUCTS];
+  if (ACTIVE_COLOR !== "all") {
+    list = list.filter((p) => (p.color || "").trim().toLowerCase() === ACTIVE_COLOR);
+  }
   const s = sortSel ? sortSel.value : "";
   if (s === "low") list = [...list].sort((a, b) => a.price - b.price);
   if (s === "high") list = [...list].sort((a, b) => b.price - a.price);
@@ -93,11 +139,13 @@ function render() {
                  onload="this.classList.add('loaded')"
                  onerror="window.driveImgError(this)">
             <span class="shine"></span>
+            ${p.color && p.color.trim() && p.color.trim().toLowerCase() !== "assorted"
+              ? `<span class="badge-color"><span class="dot" style="background:${p.colorSwatch}"></span>${p.color}</span>`
+              : ""}
             <button class="card-view" data-view="${p.id}">View Gallery</button>
           </div>
           <div class="card-body">
             <h3>${p.name}</h3>
-            <p class="desc">${p.details || "Exquisite handpicked saree with matching blouse."}</p>
             <div class="card-foot">
               ${priceHtml}
               <div class="qty" data-qty="${p.id}">
