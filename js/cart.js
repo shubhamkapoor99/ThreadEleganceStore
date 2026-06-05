@@ -7,7 +7,44 @@ const itemsWrap = document.getElementById("cart-items");
 const summaryWrap = document.getElementById("cart-summary");
 let summaryBuilt = false;   // build the form once; never wipe typed details
 
+// Full catalog (with every image, details, type) so a cart item can open the
+// same swipeable gallery modal it has on the Products page. Keyed by product id.
+const CATALOG = new Map();
+
 renderCart();
+loadCatalog();
+
+// Fetch the catalog in the background; once it arrives the cart images/names
+// become clickable and open the rich gallery. Failing silently is fine — the
+// click still opens a basic single-image gallery built from the cart item.
+async function loadCatalog() {
+  if (typeof window.loadProductsFromDrive !== "function") return;
+  try {
+    const result = await window.loadProductsFromDrive();
+    (result.products || []).forEach((p) => CATALOG.set(p.id, p));
+  } catch (e) {
+    console.error("Cart: couldn't load catalog for gallery", e);
+  }
+}
+
+// Open the gallery for a cart item: prefer the full catalog product, and fall
+// back to a minimal product built from the stored cart fields.
+function openItemGallery(it) {
+  if (typeof window.openGallery !== "function") return;
+  const product = CATALOG.get(it.id) || {
+    id: it.id,
+    group: it.group,
+    name: it.name,
+    price: it.price,
+    color: it.color,
+    colorSwatch: it.colorSwatch,
+    images: it.image ? [it.image] : [],
+    imagesAlt: [],
+    thumbs: it.image ? [it.image] : [],
+    thumbsAlt: [],
+  };
+  window.openGallery(product);
+}
 
 function renderCart() {
   const cart = window.getCart();
@@ -34,10 +71,11 @@ function renderItems() {
   const cart = window.getCart();
   itemsWrap.innerHTML = cart.map((it) => `
     <div class="cart-item" data-id="${it.id}">
-      <img src="${it.image}" alt="${it.name}"
+      <img src="${it.image}" alt="${it.name}" class="ci-open" data-open="${it.id}"
+           title="View gallery"
            onerror="this.src='https://placehold.co/120x150/f3ebe0/8a7c80?text=Saree'">
       <div>
-        <h4>${it.name}</h4>
+        <h4 class="ci-open" data-open="${it.id}" title="View gallery">${it.name}</h4>
         <div class="qty" style="margin-top:12px" data-qty="${it.id}">
           <button data-step="-1">−</button>
           <input type="number" min="1" value="${it.quantity}" data-input="${it.id}">
@@ -133,6 +171,13 @@ function bindItemEvents() {
 
   itemsWrap.querySelectorAll("[data-remove]").forEach((b) =>
     b.addEventListener("click", () => { window.removeFromCart(b.dataset.remove); refresh(); }));
+
+  // Clicking a cart item's image or name opens the same gallery as Products.
+  itemsWrap.querySelectorAll("[data-open]").forEach((el) =>
+    el.addEventListener("click", () => {
+      const it = window.getCart().find((c) => c.id === el.dataset.open);
+      if (it) openItemGallery(it);
+    }));
 }
 
 function checkout() {
