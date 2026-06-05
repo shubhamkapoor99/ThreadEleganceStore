@@ -306,6 +306,9 @@ section { position: relative; }
 .cart-item h4 { color: var(--wine); font-family: var(--font-sans); font-size: 1.05rem; }
 .cart-item .ci-color { color: var(--muted); font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
 .cart-item .ci-color .dot { width: 11px; height: 11px; border-radius: 50%; }
+.cart-item .ci-open { cursor: pointer; transition: opacity .2s ease, color .2s ease; }
+.cart-item img.ci-open:hover { opacity: .85; }
+.cart-item h4.ci-open:hover { color: var(--gold, #b08d57); }
 .ci-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .ci-remove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: .85rem; }
 .summary { background: #fff; border: 1px solid #efe6da; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-md);
