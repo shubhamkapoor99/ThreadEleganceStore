@@ -49,15 +49,11 @@ window.STORE_CONFIG = {
   /* ---- .txt file format (all keys optional) ----
        Color: Maroon
        Name: Kanchipuram Silk Saree
+       Type: Silk                  // Saree Cloth / fabric — shown as a tag + filter
        Price: 12999
        Details: A luxurious pure-silk saree with golden zari border.
                 Comes with a contrast blouse piece.
 
      If you don't use keys, the FIRST line is treated as the Color and
      everything after it is treated as the Details paragraph. */
-
-  /* If true, when Drive is not configured the site shows sample products
-     so you can preview the design. Set false to ONLY ever show your real
-     sarees from Google Drive (recommended for the live store). */
-  showDemoWhenUnconfigured: false,
 };
