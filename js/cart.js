@@ -22,6 +22,9 @@ async function loadCatalog() {
   try {
     const result = await window.loadProductsFromDrive();
     (result.products || []).forEach((p) => CATALOG.set(p.id, p));
+    // Re-render so older cart items (saved without a type) pick up their
+    // "Saree Cloth" tag from the freshly loaded catalog.
+    renderCart();
   } catch (e) {
     console.error("Cart: couldn't load catalog for gallery", e);
   }
@@ -69,14 +72,19 @@ function renderCart() {
 
 function renderItems() {
   const cart = window.getCart();
-  itemsWrap.innerHTML = cart.map((it) => `
+  itemsWrap.innerHTML = cart.map((it) => {
+    const type = (it.type || (CATALOG.get(it.id) || {}).type || "").trim();
+    return `
     <div class="cart-item" data-id="${it.id}">
       <img src="${it.image}" alt="${it.name}" class="ci-open" data-open="${it.id}"
            title="View gallery"
            onerror="this.src='https://placehold.co/120x150/f3ebe0/8a7c80?text=Saree'">
-      <div>
+      <div class="ci-info">
         <h4 class="ci-open" data-open="${it.id}" title="View gallery">${it.name}</h4>
-        <div class="qty" style="margin-top:12px" data-qty="${it.id}">
+        ${type
+          ? `<span class="ci-tag">${type}</span>`
+          : ""}
+        <div class="qty" data-qty="${it.id}">
           <button data-step="-1">−</button>
           <input type="number" min="1" value="${it.quantity}" data-input="${it.id}">
           <button data-step="1">+</button>
@@ -88,7 +96,8 @@ function renderItems() {
           : "<small>Price: Calculated on WhatsApp</small>"}</div>
         <button class="ci-remove" data-remove="${it.id}">✕ Remove</button>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 function buildSummary() {
