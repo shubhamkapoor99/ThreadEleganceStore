@@ -86,7 +86,7 @@ function addToCart(item, qty = 1) {
 function productCartShape(p) {
   return {
     id: p.id, group: p.group, name: p.name, price: p.price, color: p.color,
-    colorSwatch: p.colorSwatch, image: p.cover || (p.images && p.images[0]),
+    colorSwatch: p.colorSwatch, type: p.type, image: p.cover || (p.images && p.images[0]),
   };
 }
 // Add exactly one more of this product (used by the gallery modal).
