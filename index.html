@@ -103,6 +103,7 @@
       </div>
       <div class="modal-info">
         <h2 data-mtitle>Saree</h2>
+        <p class="m-type" data-mtype></p>
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
         <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
@@ -124,10 +125,16 @@
   <script>
     (async function () {
       const grid = document.getElementById("featured-grid");
-      grid.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line"></div><div class="sk-line short"></div></div></div>`.repeat(3);
+      grid.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line"></div><div class="sk-line short"></div></div></div>`.repeat(4);
       try {
         const { products } = await window.loadProductsFromDrive();
-        const top = products.slice(0, 3);
+        // Featured sarees use the image naming  F1_1.png, F1_2.png (saree 1),
+        // F2_1.png, F2_2.png (saree 2) … up to F4. Pick those groups, ordered
+        // by their F-number, and cap the section at 4 sarees.
+        const featured = products
+          .filter((p) => /^F\d+$/i.test(p.group))
+          .sort((a, b) => parseInt(a.group.slice(1), 10) - parseInt(b.group.slice(1), 10));
+        const top = (featured.length ? featured : products).slice(0, 4);
         if (!top.length) {
           grid.style.display = "block";
           grid.innerHTML = `<div class="notice">Your sarees will appear here once your Google Drive is connected.<br>
@@ -151,6 +158,7 @@
                 </div>
                 <div class="card-body">
                   <h3>${p.name}</h3>
+                  ${p.type && p.type.trim() ? `<span class="card-tag">${p.type.trim()}</span>` : ""}
                   <div class="card-foot">
                     <span class="price">${window.SHOW_PRICE ? (p.price ? window.money(p.price) : "<small>Price on request</small>") : "<small>Price: Calculated on WhatsApp</small>"}</span>
                     <div class="qty" data-qty="${p.id}">
