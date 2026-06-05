@@ -175,6 +175,7 @@ section { position: relative; }
 .filters { background: #fff; border: 1px solid #efe6da; border-radius: var(--radius); padding: 22px 24px;
   box-shadow: var(--shadow-sm); margin-bottom: 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 .filters .f-label { font-weight: 600; color: var(--wine); margin-right: 4px; }
+.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; width: 100%; }
 .color-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px;
   border: 1.5px solid #e6dccd; background: #fff; cursor: pointer; font-size: .88rem; font-weight: 500;
@@ -227,6 +228,11 @@ section { position: relative; }
 .card-body h3 { font-size: 1.02rem; color: var(--wine); font-family: var(--font-serif); margin-bottom: 4px;
   line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden; }
+/* Saree Cloth tag, shown below the card title */
+.card-tag { display: inline-flex; align-items: center; max-width: 100%; margin: 2px 0 2px;
+  padding: 4px 11px; border-radius: 999px; font-size: .72rem; font-weight: 600; letter-spacing: .02em;
+  color: var(--wine); background: var(--ivory-2); border: 1px solid #ecdfcb; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
 .card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 8px 10px; margin-top: 11px; }
 .price { font-size: 1.02rem; font-weight: 700; color: var(--ink); flex: 1 1 auto; min-width: 0; line-height: 1.25; }
@@ -269,6 +275,10 @@ section { position: relative; }
 .modal-info h2 { color: var(--wine); font-size: 2rem; margin-bottom: 10px; }
 .modal-info .m-color { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 18px; }
 .modal-info .m-color .dot { width: 16px; height: 16px; border-radius: 50%; }
+.modal-info .m-type { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  margin-bottom: 16px; padding: 6px 14px; border-radius: 999px; font-size: .9rem; font-weight: 600;
+  color: var(--wine); background: var(--ivory-2); border: 1px solid #ecdfcb; }
+.modal-info .m-type .m-type-label { color: var(--muted); font-weight: 600; }
 .modal-info .m-details { color: #5a4d51; flex: 1; margin-bottom: 22px; }
 .modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; }
 .modal-close { position: absolute; top: 16px; right: 16px; z-index: 5; width: 40px; height: 40px; border-radius: 50%;
@@ -287,8 +297,6 @@ section { position: relative; }
   background: linear-gradient(100deg, #f0e8dc 30%, #f8f2e8 50%, #f0e8dc 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
 .skeleton .sk-line.short { width: 55%; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-.demo-banner { background: linear-gradient(135deg, var(--gold-light), #fff); border: 1px solid var(--gold);
-  color: #6b5320; padding: 14px 20px; border-radius: 12px; margin-bottom: 26px; font-size: .9rem; text-align: center; }
 
 /* ---------- cart page ---------- */
 .cart-wrap { display: grid; grid-template-columns: 1.6fr .9fr; gap: 34px; align-items: start; }
@@ -390,6 +398,7 @@ section { position: relative; }
   .product-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .card-body { padding: 10px 10px 12px; transform: none; }
   .card-body h3 { font-size: .88rem; min-height: 2.4em; }
+  .card-tag { font-size: .66rem; padding: 3px 9px; }
   .card-foot { gap: 6px; margin-top: 8px; }
   .price { font-size: .86rem; }
   .qty button { width: 28px; height: 30px; font-size: .95rem; }
