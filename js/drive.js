@@ -1,7 +1,6 @@
 /* =====================================================================
    drive.js  -  Auto-load the saree catalog from a public Google Drive
    folder. Groups images by "<group>_<n>" and reads "<group>.txt".
-   Falls back to demo products when Drive isn't configured.
    ===================================================================== */
 
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
@@ -61,6 +60,7 @@ function parseInfoText(text, group) {
     color: "Assorted",
     price: 0,
     details: "",
+    type: "",          // Saree Cloth / fabric (from the "type" key)
   };
   if (!text) return result;
 
@@ -78,6 +78,9 @@ function parseInfoText(text, group) {
       const val = m[2].trim();
       if (key === "name" || key === "title") { result.name = val; nameSet = true; return; }
       if (key === "color" || key === "colour") { result.color = val; return; }
+      if (key === "type" || key === "cloth" || key === "fabric" || key === "material") {
+        result.type = val; return;
+      }
       if (key === "price" || key === "cost" || key === "mrp") {
         const num = parseInt(val.replace(/[^\d]/g, ""), 10);
         if (!isNaN(num)) result.price = num;
@@ -188,6 +191,7 @@ async function assembleProducts(files, fetchText) {
       colorSwatch: colorToSwatch(info.color),
       price: info.price,
       details: info.details,
+      type: info.type,
       cover: driveImageUrl(grp.images[0].id, 800),
       coverAlt: driveImageUrlAlt(grp.images[0].id, 800),
       images: grp.images.map((im) => driveImageUrl(im.id, 1600)),
@@ -214,7 +218,7 @@ async function loadProductsFromDrive() {
   if (cfg.appsScriptUrl) {
     const files = await listViaAppsScript(cfg.appsScriptUrl);
     const products = await assembleProducts(files, null);
-    return { products, demo: false };
+    return { products };
   }
 
   // Option B: Drive API key.
@@ -223,46 +227,11 @@ async function loadProductsFromDrive() {
     const products = await assembleProducts(
       files, (id) => fetchTextFile(id, cfg.apiKey)
     );
-    return { products, demo: false };
+    return { products };
   }
 
   // Not configured yet.
-  if (window.STORE_CONFIG.showDemoWhenUnconfigured) {
-    return { products: demoProducts(), demo: true };
-  }
-  return { products: [], demo: false, unconfigured: true };
-}
-
-/* ---- demo data (used before Drive is configured) ---------------- */
-
-function demoProducts() {
-  const demo = [
-    { name: "Kanchipuram Silk Saree", color: "Maroon", price: 12999, seed: "kanchi",
-      details: "Luxurious pure-silk saree with golden zari border. Paired with a contrast temple-motif blouse piece." },
-    { name: "Banarasi Georgette Saree", color: "Blue", price: 9499, seed: "banarasi",
-      details: "Soft flowing georgette woven with delicate golden motifs and a matching blouse." },
-    { name: "Tussar Handloom Saree", color: "Green", price: 7299, seed: "tussar",
-      details: "Earthy handloom tussar with artisan finish and an unstitched blouse piece." },
-    { name: "Royal Wedding Saree", color: "Red", price: 18999, seed: "royal",
-      details: "Bridal red silk with heavy zari work, ideal for weddings. Includes designer blouse." },
-    { name: "Pastel Organza Saree", color: "Pink", price: 6499, seed: "organza",
-      details: "Sheer pastel organza with floral prints and a soft satin blouse." },
-    { name: "Mustard Cotton Saree", color: "Mustard", price: 3499, seed: "cotton",
-      details: "Breezy daily-wear cotton in warm mustard tones with a simple blouse." },
-  ];
-  return demo.map((d, i) => {
-    const imgs = [1, 2, 3].map((n) =>
-      `https://picsum.photos/seed/${d.seed}${n}/900/1200`);
-    const thumbs = [1, 2, 3].map((n) =>
-      `https://picsum.photos/seed/${d.seed}${n}/220/300`);
-    return {
-      id: `demo${i + 1}`, group: String(i + 1), name: d.name, color: d.color,
-      colorSwatch: colorToSwatch(d.color), price: d.price, details: d.details,
-      cover: `https://picsum.photos/seed/${d.seed}1/800/1066`,
-      coverAlt: `https://picsum.photos/seed/${d.seed}1/800/1066`,
-      images: imgs, imagesAlt: imgs, thumbs, thumbsAlt: thumbs,
-    };
-  });
+  return { products: [], unconfigured: true };
 }
 
 window.loadProductsFromDrive = loadProductsFromDrive;
