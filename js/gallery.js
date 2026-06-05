@@ -19,6 +19,12 @@
     idx = 0;
 
     modal.querySelector("[data-mtitle]").textContent = p.name;
+    const typeEl = modal.querySelector("[data-mtype]");
+    if (typeEl) {
+      const t = (p.type || "").trim();
+      typeEl.innerHTML = t ? `<span class="m-type-label">Saree Cloth:</span> ${t}` : "";
+      typeEl.style.display = t ? "" : "none";
+    }
     modal.querySelector("[data-mdetails]").textContent =
       p.details || "Exquisite handpicked saree with a matching blouse piece.";
     modal.querySelector("[data-mprice]").innerHTML = window.SHOW_PRICE
