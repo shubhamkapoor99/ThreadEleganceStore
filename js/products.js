@@ -5,11 +5,13 @@
 
 let ALL_PRODUCTS = [];
 let ACTIVE_COLOR = "all";   // lowercased colour key, or "all"
+let ACTIVE_TYPE = "all";    // lowercased saree-cloth key, or "all"
 
 const grid = document.getElementById("product-grid");
 const sortSel = document.getElementById("sort-select");
 const countLabel = document.getElementById("result-count");
 const colorFilter = document.getElementById("color-filter");
+const typeFilter = document.getElementById("type-filter");
 
 init();
 
@@ -27,10 +29,6 @@ async function init() {
   }
 
   ALL_PRODUCTS = result.products || [];
-  if (result.demo) {
-    const banner = document.getElementById("demo-banner");
-    if (banner) banner.style.display = "block";
-  }
   if (result.unconfigured) {
     grid.className = "";
     grid.innerHTML = `<div class="notice">Your collection isn't connected yet.<br>
@@ -47,6 +45,7 @@ async function init() {
     return;
   }
   buildColorFilter();
+  buildTypeFilter();
   render();
 }
 
@@ -90,6 +89,42 @@ function buildColorFilter() {
     }));
 }
 
+// Build the Saree Cloth filter chips from the "type" field in the .txt files.
+function buildTypeFilter() {
+  if (!typeFilter) return;
+
+  const seen = new Map();   // lowercase key -> label
+  ALL_PRODUCTS.forEach((p) => {
+    const label = (p.type || "").trim();
+    if (!label) return;
+    const key = label.toLowerCase();
+    if (!seen.has(key)) seen.set(key, label);
+  });
+
+  if (seen.size <= 1) {        // nothing useful to filter by
+    typeFilter.innerHTML = "";
+    const wrap = typeFilter.closest(".filter-row");
+    if (wrap) wrap.style.display = "none";
+    return;
+  }
+
+  const chips = [`<button class="chip${ACTIVE_TYPE === "all" ? " active" : ""}" data-type="all">All</button>`];
+  [...seen.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([key, label]) => {
+      chips.push(`<button class="chip${ACTIVE_TYPE === key ? " active" : ""}" data-type="${key}">${label}</button>`);
+    });
+  typeFilter.innerHTML = chips.join("");
+
+  typeFilter.querySelectorAll(".chip").forEach((chip) =>
+    chip.addEventListener("click", () => {
+      ACTIVE_TYPE = chip.dataset.type;
+      typeFilter.querySelectorAll(".chip").forEach((c) =>
+        c.classList.toggle("active", c.dataset.type === ACTIVE_TYPE));
+      render();
+    }));
+}
+
 function showSkeleton() {
   grid.innerHTML = "";
   grid.className = "skeleton-grid";
@@ -105,6 +140,9 @@ function getVisible() {
   if (ACTIVE_COLOR !== "all") {
     list = list.filter((p) => (p.color || "").trim().toLowerCase() === ACTIVE_COLOR);
   }
+  if (ACTIVE_TYPE !== "all") {
+    list = list.filter((p) => (p.type || "").trim().toLowerCase() === ACTIVE_TYPE);
+  }
   const s = sortSel ? sortSel.value : "";
   if (s === "low") list = [...list].sort((a, b) => a.price - b.price);
   if (s === "high") list = [...list].sort((a, b) => b.price - a.price);
@@ -118,7 +156,7 @@ function render() {
   countLabel.textContent = `${list.length} saree${list.length === 1 ? "" : "s"}`;
 
   if (!list.length) {
-    grid.innerHTML = `<div class="notice">No sarees in this colour. Try another filter.</div>`;
+    grid.innerHTML = `<div class="notice">No sarees match these filters. Try another colour or cloth.</div>`;
     return;
   }
 
@@ -146,6 +184,9 @@ function render() {
           </div>
           <div class="card-body">
             <h3>${p.name}</h3>
+            ${p.type && p.type.trim()
+              ? `<span class="card-tag">${p.type.trim()}</span>`
+              : ""}
             <div class="card-foot">
               ${priceHtml}
               <div class="qty" data-qty="${p.id}">
