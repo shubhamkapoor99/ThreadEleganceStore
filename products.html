@@ -24,14 +24,16 @@
 
   <section class="section" style="padding-top:60px">
     <div class="container">
-      <div id="demo-banner" class="demo-banner" style="display:none">
-        ✦ Showing <b>demo products</b>. Add your Google Drive <b>API key</b> in <code>js/config.js</code> to load your real catalog automatically.
-      </div>
-
       <!-- filter bar -->
       <div class="filters reveal">
-        <span class="f-label">Filter by colour</span>
-        <div id="color-filter" class="color-chips" role="group" aria-label="Filter sarees by colour"></div>
+        <div class="filter-row">
+          <span class="f-label">Filter by colour</span>
+          <div id="color-filter" class="color-chips" role="group" aria-label="Filter sarees by colour"></div>
+        </div>
+        <div class="filter-row">
+          <span class="f-label">Filter by Saree Cloth</span>
+          <div id="type-filter" class="color-chips" role="group" aria-label="Filter sarees by cloth"></div>
+        </div>
         <select id="sort-select" aria-label="Sort">
           <option value="">Sort: Featured</option>
           <option value="low">Price: Low to High</option>
@@ -60,6 +62,7 @@
       </div>
       <div class="modal-info">
         <h2 data-mtitle>Saree</h2>
+        <p class="m-type" data-mtype></p>
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
         <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
