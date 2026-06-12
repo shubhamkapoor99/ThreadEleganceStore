@@ -51,6 +51,8 @@ function openItemGallery(it) {
 
 function renderCart() {
   const cart = window.getCart();
+  const wrap = itemsWrap.closest(".cart-wrap");
+  if (wrap) wrap.classList.toggle("is-empty", !cart.length);
 
   if (!cart.length) {
     itemsWrap.innerHTML = `
