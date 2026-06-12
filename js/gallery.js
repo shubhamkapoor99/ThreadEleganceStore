@@ -33,9 +33,29 @@
           : "<small style='font-size:1rem;color:var(--muted)'>Price on request</small>")
       : "<small style='font-size:1rem;color:var(--muted)'>Price: Calculated on WhatsApp</small>";
 
+    // Quantity stepper inside the gallery view: pre-fill with the amount
+    // already in the cart (or 1), and let the shopper adjust before adding.
+    const qtyInput = modal.querySelector("[data-mqtyinput]");
+    const qtyWrap = modal.querySelector("[data-mqty]");
+    if (qtyInput && qtyWrap) {
+      const inCart = window.getCart().find((c) => c.id === p.id);
+      qtyInput.value = inCart ? inCart.quantity : 1;
+      qtyWrap.querySelectorAll("button").forEach((btn) => {
+        btn.onclick = () => {
+          qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) + parseInt(btn.dataset.mstep));
+        };
+      });
+      qtyInput.onchange = () => {
+        qtyInput.value = Math.max(1, parseInt(qtyInput.value) || 1);
+      };
+    }
+
     const addBtn = modal.querySelector("[data-madd]");
     addBtn.onclick = () => {
-      window.addOneToCart(p);
+      const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 1;
+      // Set the cart to the chosen quantity (matches the product-card steppers).
+      if (window.getCart().some((c) => c.id === p.id)) window.setQuantity(p.id, qty);
+      else window.addToCart(window.productCartShape(p), qty);
       addBtn.textContent = "Added to Cart ✓";
       setTimeout(() => (addBtn.textContent = "Add to Cart"), 1300);
       if (typeof window.onGalleryAdd === "function") window.onGalleryAdd();
