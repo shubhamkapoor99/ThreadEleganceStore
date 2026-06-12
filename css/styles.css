@@ -120,6 +120,8 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 }
 @media (max-width: 860px) {
   body.home .nav-inner { justify-content: flex-end; }
+  /* No blur on the home navbar over the hero on mobile. */
+  body.home .navbar:not(.scrolled) { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 .nav-cart { position: relative; display: grid; place-items: center; color: var(--wine); }
