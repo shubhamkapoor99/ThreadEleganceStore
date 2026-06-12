@@ -120,8 +120,13 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 }
 @media (max-width: 860px) {
   body.home .nav-inner { justify-content: flex-end; }
-  /* No blur on the home navbar over the hero on mobile. */
-  body.home .navbar:not(.scrolled) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  /* Fully clear home navbar over the hero on mobile: no blur, tint or border. */
+  body.home .navbar:not(.scrolled) { background: transparent; backdrop-filter: none;
+    -webkit-backdrop-filter: none; border-bottom: none; box-shadow: none; }
+  /* White cart + menu icons for legibility over the hero image. */
+  body.home .navbar:not(.scrolled) .nav-cart { color: #fff;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .4); }
+  body.home .navbar:not(.scrolled) .nav-toggle span { background: #fff; }
 }
 
 .nav-cart { position: relative; display: grid; place-items: center; color: var(--wine); }
