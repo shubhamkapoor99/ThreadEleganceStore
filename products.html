@@ -26,20 +26,59 @@
     <div class="container">
       <!-- filter bar -->
       <div class="filters reveal">
-        <div class="filter-row">
-          <span class="f-label">Filter by colour</span>
-          <div id="color-filter" class="color-chips" role="group" aria-label="Filter sarees by colour"></div>
+        <div class="filters-head">
+          <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filter-menu">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 5h18M6 12h12M10 19h4"/>
+            </svg>
+            <span>Filter</span>
+            <svg class="ft-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div class="filter-active" id="filter-active" aria-live="polite"></div>
+          <select id="sort-select" aria-label="Sort">
+            <option value="">Featured</option>
+            <option value="low">Price: Low–High</option>
+            <option value="high">Price: High–Low</option>
+            <option value="name">Name: A–Z</option>
+          </select>
         </div>
-        <div class="filter-row">
-          <span class="f-label">Filter by Saree Cloth</span>
-          <div id="type-filter" class="color-chips" role="group" aria-label="Filter sarees by cloth"></div>
+
+        <div class="filter-menu" id="filter-menu" hidden>
+          <div class="filter-group" id="color-group">
+            <button type="button" class="filter-group-head" aria-expanded="false">
+              <span class="fg-label">Colour</span>
+              <span class="fg-current" id="color-current">All</span>
+              <svg class="fg-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="filter-group-body">
+              <div id="color-filter" class="color-chips" role="group" aria-label="Filter sarees by colour"></div>
+            </div>
+          </div>
+
+          <div class="filter-group" id="type-group">
+            <button type="button" class="filter-group-head" aria-expanded="false">
+              <span class="fg-label">Saree Cloth</span>
+              <span class="fg-current" id="type-current">All</span>
+              <svg class="fg-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="filter-group-body">
+              <div id="type-filter" class="color-chips" role="group" aria-label="Filter sarees by cloth"></div>
+            </div>
+          </div>
+
+          <div class="filter-group" id="price-row" hidden>
+            <button type="button" class="filter-group-head" aria-expanded="false">
+              <span class="fg-label">Price Range</span>
+              <span class="fg-current" id="price-current">All</span>
+              <svg class="fg-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="filter-group-body">
+              <div id="price-filter" class="price-filter"></div>
+            </div>
+          </div>
         </div>
-        <select id="sort-select" aria-label="Sort">
-          <option value="">Sort: Featured</option>
-          <option value="low">Price: Low to High</option>
-          <option value="high">Price: High to Low</option>
-          <option value="name">Name: A → Z</option>
-        </select>
       </div>
 
       <p id="result-count" class="muted" style="margin-bottom:18px"></p>
@@ -65,7 +104,14 @@
         <p class="m-type" data-mtype></p>
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
-        <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+        <div class="m-buy">
+          <div class="qty" data-mqty>
+            <button type="button" data-mstep="-1">−</button>
+            <input type="number" min="1" value="1" data-mqtyinput aria-label="Quantity">
+            <button type="button" data-mstep="1">+</button>
+          </div>
+          <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+        </div>
       </div>
     </div>
   </div>
