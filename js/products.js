@@ -6,14 +6,118 @@
 let ALL_PRODUCTS = [];
 let ACTIVE_COLOR = "all";   // lowercased colour key, or "all"
 let ACTIVE_TYPE = "all";    // lowercased saree-cloth key, or "all"
+let ACTIVE_COLOR_LABEL = "";
+let ACTIVE_COLOR_SWATCH = "";
+let ACTIVE_TYPE_LABEL = "";
+let PRICE_BOUNDS = null;    // { min, max } across the catalog (only when prices show)
+let ACTIVE_PRICE = null;    // { min, max } current selection, or null when unused
 
 const grid = document.getElementById("product-grid");
 const sortSel = document.getElementById("sort-select");
 const countLabel = document.getElementById("result-count");
 const colorFilter = document.getElementById("color-filter");
 const typeFilter = document.getElementById("type-filter");
+const priceFilter = document.getElementById("price-filter");
+const priceRow = document.getElementById("price-row");
 
+initFilterUI();
 init();
+
+// The "Filter" dropdown: clicking the button opens the menu of categories;
+// clicking a category (Colour / Saree Cloth / Price Range) expands its options.
+function initFilterUI() {
+  const toggle = document.getElementById("filter-toggle");
+  const menu = document.getElementById("filter-menu");
+  if (!toggle || !menu) return;
+
+  const setOpen = (open) => {
+    menu.hidden = !open;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setOpen(menu.hidden);
+  });
+
+  // Accordion: open one category at a time.
+  menu.querySelectorAll(".filter-group-head").forEach((head) => {
+    head.addEventListener("click", () => {
+      const group = head.closest(".filter-group");
+      const wasOpen = group.classList.contains("open");
+      menu.querySelectorAll(".filter-group").forEach((g) => g.classList.remove("open"));
+      menu.querySelectorAll(".filter-group-head").forEach((h) => h.setAttribute("aria-expanded", "false"));
+      if (!wasOpen) { group.classList.add("open"); head.setAttribute("aria-expanded", "true"); }
+    });
+  });
+
+  // Close when clicking anywhere outside the filter panel.
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !e.target.closest(".filters")) setOpen(false);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+}
+
+// Reflect the chosen value next to a category head (e.g. "All" → "Blue").
+function setFilterSummary(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text || "All";
+}
+
+// Show the currently-applied filters as removable chips, to the RIGHT of the
+// Filter button. Only non-default selections appear.
+function renderActiveFilters() {
+  const wrap = document.getElementById("filter-active");
+  if (!wrap) return;
+  const chips = [];
+  if (ACTIVE_COLOR !== "all") {
+    chips.push(`<span class="active-chip">${ACTIVE_COLOR_SWATCH
+      ? `<span class="dot" style="background:${ACTIVE_COLOR_SWATCH}"></span>` : ""}${ACTIVE_COLOR_LABEL}
+      <button class="x" type="button" data-clear="color" aria-label="Clear colour filter">&times;</button></span>`);
+  }
+  if (ACTIVE_TYPE !== "all") {
+    chips.push(`<span class="active-chip">${ACTIVE_TYPE_LABEL}
+      <button class="x" type="button" data-clear="type" aria-label="Clear cloth filter">&times;</button></span>`);
+  }
+  if (window.SHOW_PRICE && ACTIVE_PRICE && PRICE_BOUNDS &&
+      (ACTIVE_PRICE.min > PRICE_BOUNDS.min || ACTIVE_PRICE.max < PRICE_BOUNDS.max)) {
+    chips.push(`<span class="active-chip">${window.money(ACTIVE_PRICE.min)} – ${window.money(ACTIVE_PRICE.max)}
+      <button class="x" type="button" data-clear="price" aria-label="Clear price filter">&times;</button></span>`);
+  }
+  wrap.innerHTML = chips.join("");
+  wrap.querySelectorAll("[data-clear]").forEach((b) =>
+    b.addEventListener("click", (e) => { e.stopPropagation(); clearFilter(b.dataset.clear); }));
+}
+
+// Reset a single filter back to its default and refresh the grid.
+function clearFilter(kind) {
+  if (kind === "color") {
+    ACTIVE_COLOR = "all"; ACTIVE_COLOR_LABEL = ""; ACTIVE_COLOR_SWATCH = "";
+    if (colorFilter) colorFilter.querySelectorAll(".chip").forEach((c) =>
+      c.classList.toggle("active", c.dataset.color === "all"));
+    setFilterSummary("color-current", "All");
+  } else if (kind === "type") {
+    ACTIVE_TYPE = "all"; ACTIVE_TYPE_LABEL = "";
+    if (typeFilter) typeFilter.querySelectorAll(".chip").forEach((c) =>
+      c.classList.toggle("active", c.dataset.type === "all"));
+    setFilterSummary("type-current", "All");
+  } else if (kind === "price" && PRICE_BOUNDS) {
+    ACTIVE_PRICE = { ...PRICE_BOUNDS };
+    const minI = priceFilter && priceFilter.querySelector(".range-min");
+    const maxI = priceFilter && priceFilter.querySelector(".range-max");
+    const fill = priceFilter && priceFilter.querySelector(".range-fill");
+    const loL = priceFilter && priceFilter.querySelector(".range-lo");
+    const hiL = priceFilter && priceFilter.querySelector(".range-hi");
+    if (minI && maxI) {
+      minI.value = PRICE_BOUNDS.min; maxI.value = PRICE_BOUNDS.max;
+      if (fill) { fill.style.left = "0%"; fill.style.right = "0%"; }
+      if (loL) loL.textContent = window.money(PRICE_BOUNDS.min);
+      if (hiL) hiL.textContent = window.money(PRICE_BOUNDS.max);
+    }
+    setFilterSummary("price-current", "All");
+  }
+  renderActiveFilters();
+  render();
+}
 
 async function init() {
   showSkeleton();
@@ -46,7 +150,68 @@ async function init() {
   }
   buildColorFilter();
   buildTypeFilter();
+  buildPriceFilter();
   render();
+}
+
+// Build the price-range slider — ONLY when prices are shown (config.priceDisplay
+// === "ON"). When prices are hidden the whole row stays hidden.
+function buildPriceFilter() {
+  if (!priceFilter || !priceRow) return;
+  if (!window.SHOW_PRICE) { priceRow.hidden = true; return; }
+
+  const priced = ALL_PRODUCTS.map((p) => Number(p.price)).filter((v) => v > 0);
+  if (priced.length < 2) { priceRow.hidden = true; return; }   // nothing to range over
+
+  const step = nicePriceStep(Math.max(...priced) - Math.min(...priced));
+  const lo = Math.floor(Math.min(...priced) / step) * step;
+  const hi = Math.ceil(Math.max(...priced) / step) * step;
+  if (hi <= lo) { priceRow.hidden = true; return; }
+
+  PRICE_BOUNDS = { min: lo, max: hi };
+  ACTIVE_PRICE = { min: lo, max: hi };
+  priceRow.hidden = false;
+
+  priceFilter.innerHTML = `
+    <div class="range">
+      <div class="range-track"><div class="range-fill"></div></div>
+      <input type="range" class="range-min" min="${lo}" max="${hi}" step="${step}" value="${lo}" aria-label="Minimum price">
+      <input type="range" class="range-max" min="${lo}" max="${hi}" step="${step}" value="${hi}" aria-label="Maximum price">
+    </div>
+    <div class="range-vals"><span class="range-lo"></span><span class="range-hi"></span></div>`;
+
+  const minI = priceFilter.querySelector(".range-min");
+  const maxI = priceFilter.querySelector(".range-max");
+  const fill = priceFilter.querySelector(".range-fill");
+  const loL = priceFilter.querySelector(".range-lo");
+  const hiL = priceFilter.querySelector(".range-hi");
+  const span = hi - lo;
+
+  const update = (rerender) => {
+    let a = Math.min(+minI.value, +maxI.value);
+    let b = Math.max(+minI.value, +maxI.value);
+    ACTIVE_PRICE = { min: a, max: b };
+    fill.style.left = ((a - lo) / span) * 100 + "%";
+    fill.style.right = ((hi - b) / span) * 100 + "%";
+    loL.textContent = window.money(a);
+    hiL.textContent = window.money(b);
+    setFilterSummary("price-current", (a <= lo && b >= hi) ? "All" : `${window.money(a)} – ${window.money(b)}`);
+    renderActiveFilters();
+    if (rerender) render();
+  };
+
+  // Stop the two thumbs from crossing each other.
+  minI.addEventListener("input", () => { if (+minI.value > +maxI.value) minI.value = maxI.value; update(true); });
+  maxI.addEventListener("input", () => { if (+maxI.value < +minI.value) maxI.value = minI.value; update(true); });
+  update(false);
+}
+
+// Pick a tidy slider step so the thumbs snap to round prices.
+function nicePriceStep(range) {
+  if (range <= 1000) return 50;
+  if (range <= 5000) return 100;
+  if (range <= 20000) return 500;
+  return 1000;
 }
 
 // Build the colour filter chips from the colours found in the saree .txt files.
@@ -65,6 +230,8 @@ function buildColorFilter() {
 
   if (seen.size <= 1) {        // nothing useful to filter by
     colorFilter.innerHTML = "";
+    const group = document.getElementById("color-group");
+    if (group) group.hidden = true;
     return;
   }
 
@@ -83,8 +250,13 @@ function buildColorFilter() {
   colorFilter.querySelectorAll(".chip").forEach((chip) =>
     chip.addEventListener("click", () => {
       ACTIVE_COLOR = chip.dataset.color;
+      ACTIVE_COLOR_LABEL = ACTIVE_COLOR === "all" ? "" : chip.textContent.trim();
+      const dot = chip.querySelector(".dot");
+      ACTIVE_COLOR_SWATCH = dot ? dot.style.background : "";
       colorFilter.querySelectorAll(".chip").forEach((c) =>
         c.classList.toggle("active", c.dataset.color === ACTIVE_COLOR));
+      setFilterSummary("color-current", chip.textContent.trim());
+      renderActiveFilters();
       render();
     }));
 }
@@ -103,8 +275,8 @@ function buildTypeFilter() {
 
   if (seen.size <= 1) {        // nothing useful to filter by
     typeFilter.innerHTML = "";
-    const wrap = typeFilter.closest(".filter-row");
-    if (wrap) wrap.style.display = "none";
+    const wrap = typeFilter.closest(".filter-group");
+    if (wrap) wrap.hidden = true;
     return;
   }
 
@@ -119,8 +291,11 @@ function buildTypeFilter() {
   typeFilter.querySelectorAll(".chip").forEach((chip) =>
     chip.addEventListener("click", () => {
       ACTIVE_TYPE = chip.dataset.type;
+      ACTIVE_TYPE_LABEL = ACTIVE_TYPE === "all" ? "" : chip.textContent.trim();
       typeFilter.querySelectorAll(".chip").forEach((c) =>
         c.classList.toggle("active", c.dataset.type === ACTIVE_TYPE));
+      setFilterSummary("type-current", chip.textContent.trim());
+      renderActiveFilters();
       render();
     }));
 }
@@ -142,6 +317,15 @@ function getVisible() {
   }
   if (ACTIVE_TYPE !== "all") {
     list = list.filter((p) => (p.type || "").trim().toLowerCase() === ACTIVE_TYPE);
+  }
+  // Price range only applies when prices are shown and the shopper narrowed it.
+  if (window.SHOW_PRICE && ACTIVE_PRICE && PRICE_BOUNDS &&
+      (ACTIVE_PRICE.min > PRICE_BOUNDS.min || ACTIVE_PRICE.max < PRICE_BOUNDS.max)) {
+    list = list.filter((p) => {
+      const v = Number(p.price);
+      if (!v) return true;   // keep "price on request" items visible
+      return v >= ACTIVE_PRICE.min && v <= ACTIVE_PRICE.max;
+    });
   }
   const s = sortSel ? sortSel.value : "";
   if (s === "low") list = [...list].sort((a, b) => a.price - b.price);
