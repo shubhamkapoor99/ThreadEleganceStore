@@ -214,7 +214,11 @@ function renderChrome(active) {
         <div class="footer-col">
           <h4>${CFG.storeName}</h4>
           ${CFG.tagline ? `<p>${CFG.tagline}</p>` : ""}
-          <p class="muted">${CFG.address}</p>
+          <a href="${CFG.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CFG.address)}`}"
+             target="_blank" rel="noopener" class="footer-social">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>
+            </svg>${CFG.address}</a>
         </div>
         <div class="footer-col">
           <h4>Shop</h4>
