@@ -205,6 +205,19 @@ function renderChrome(active) {
     const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 30);
     window.addEventListener("scroll", onScroll);
     onScroll();
+
+    // Keep the CSS --nav-h in sync with the navbar's real (resting) height so the
+    // hero photo sits flush under the bar with no ivory gap on any screen size.
+    const syncNavH = () => {
+      const resting = nav.classList.contains("scrolled");
+      if (resting) nav.classList.remove("scrolled");
+      document.documentElement.style.setProperty("--nav-h", nav.offsetHeight + "px");
+      if (resting) nav.classList.add("scrolled");
+    };
+    syncNavH();
+    window.addEventListener("resize", syncNavH);
+    window.addEventListener("load", syncNavH);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncNavH);
   }
 
   const footer = document.querySelector("[data-chrome='footer']");
