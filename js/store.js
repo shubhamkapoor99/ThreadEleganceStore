@@ -202,8 +202,14 @@ function renderChrome(active) {
     linksEl.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
 
     const nav = header.querySelector("#navbar");
-    const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 30);
-    window.addEventListener("scroll", onScroll);
+    const onScroll = () => {
+      const y = window.scrollY;
+      nav.classList.toggle("scrolled", y > 30);
+      // Reveal the floating WhatsApp button only after the user scrolls past the
+      // hero (used on the home page, where it would otherwise cover the badges).
+      document.body.classList.toggle("wa-shown", y > window.innerHeight * 0.5);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
     // Keep the CSS --nav-h in sync with the navbar's real (resting) height so the
