@@ -15,9 +15,99 @@
   <div class="loader"><div class="ring"></div></div>
   <header data-chrome="header"></header>
 
-  <!-- ============ HERO (3D) ============ -->
+  <!-- ============ HERO ============ -->
   <section class="hero">
-    <canvas id="hero-canvas"></canvas>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 1440 900" preserveAspectRatio="xMaxYMid slice" role="presentation">
+        <defs>
+          <linearGradient id="palluA" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e7c873" stop-opacity="0"/>
+            <stop offset="0.4" stop-color="#9b2b50" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="#3d0a1f" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="palluB" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f0d488" stop-opacity="0"/>
+            <stop offset="0.5" stop-color="#c9a24b" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#7b1e42" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="figGrad" x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0" stop-color="#52102b"/>
+            <stop offset="0.55" stop-color="#330a1c"/>
+            <stop offset="1" stop-color="#1b0510"/>
+          </linearGradient>
+          <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f3dd9b"/>
+            <stop offset="0.5" stop-color="#c9a24b"/>
+            <stop offset="1" stop-color="#8a6a2b" stop-opacity="0.2"/>
+          </linearGradient>
+          <radialGradient id="auraGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#c9a24b" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#c9a24b" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="9"/>
+          </filter>
+          <filter id="rimGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5"/>
+          </filter>
+        </defs>
+
+        <!-- ambient glow behind the figure -->
+        <ellipse class="aura" cx="1180" cy="430" rx="430" ry="520" fill="url(#auraGlow)"/>
+
+        <!-- flowing pallu (silk drape) -->
+        <g class="pallu-layer">
+          <path class="rb rb1" filter="url(#soft)" fill="url(#palluA)"
+            d="M1300,150 C1040,210 820,300 600,430 C420,540 230,580 -60,580 L-60,820 C230,810 470,740 690,610 C910,490 1110,420 1360,390 Z"/>
+          <path class="rb rb2" filter="url(#soft)" fill="url(#palluB)"
+            d="M1280,200 C1060,250 860,350 660,470 C500,560 320,620 40,650 L40,742 C320,722 520,660 720,545 C920,440 1100,385 1300,365 Z"/>
+          <path class="rb rb3" fill="url(#palluB)" opacity="0.55"
+            d="M1255,255 C1075,300 905,388 720,492 C575,572 405,628 175,656 L175,712 C405,690 560,640 745,538 C930,438 1085,392 1270,372 Z"/>
+          <path class="zari" fill="none" stroke="url(#rim)" stroke-width="2.4" opacity="0.7"
+            d="M40,742 C320,722 520,660 720,545 C920,440 1100,385 1300,365"/>
+        </g>
+
+        <!-- woman draped in a saree -->
+        <g class="figure-layer">
+          <ellipse cx="1236" cy="150" rx="30" ry="34" fill="url(#figGrad)"/>
+          <ellipse cx="1192" cy="150" rx="46" ry="56" fill="url(#figGrad)"/>
+          <path fill="url(#figGrad)"
+            d="M1174,198 C1178,224 1206,224 1210,198 L1216,220 C1210,250 1174,250 1168,220 Z"/>
+          <path class="body" fill="url(#figGrad)"
+            d="M1150,206 C1112,214 1098,250 1104,302 C1110,360 1096,402 1112,446
+               C1086,566 1066,724 1052,886 L1320,886
+               C1310,704 1300,544 1288,472 C1300,404 1302,342 1288,294
+               C1282,250 1264,214 1228,206 C1202,200 1176,200 1150,206 Z"/>
+          <!-- saree pleats -->
+          <g class="pleats" stroke="#c9a24b" stroke-width="1.4" fill="none" opacity="0.16">
+            <path d="M1150,470 C1148,640 1138,762 1126,884"/>
+            <path d="M1196,470 C1196,640 1196,762 1196,884"/>
+            <path d="M1242,470 C1246,640 1258,762 1270,884"/>
+          </g>
+          <!-- pallu over the shoulder, linking the figure to the drape -->
+          <path class="shoulder-pallu" fill="url(#palluB)" opacity="0.9"
+            d="M1228,208 C1256,182 1286,176 1306,150 C1196,210 1058,250 996,330
+               C1066,300 1158,256 1228,208 Z"/>
+          <!-- gold rim light along the front contour -->
+          <path class="rim-light" filter="url(#rimGlow)" fill="none" stroke="url(#rim)" stroke-width="3" stroke-linecap="round"
+            d="M1150,206 C1112,214 1098,250 1104,302 C1110,360 1096,402 1112,446 C1086,566 1066,724 1052,886"/>
+          <path class="rim-light" filter="url(#rimGlow)" fill="none" stroke="url(#rim)" stroke-width="2" stroke-linecap="round" opacity="0.7"
+            d="M1150,98 C1170,86 1212,86 1232,104"/>
+        </g>
+
+        <!-- floating gold dust -->
+        <g class="dust" fill="#f0d488">
+          <circle cx="520" cy="300" r="3"/>
+          <circle cx="690" cy="220" r="2.2"/>
+          <circle cx="860" cy="360" r="2.6"/>
+          <circle cx="980" cy="250" r="2"/>
+          <circle cx="420" cy="460" r="2.4"/>
+          <circle cx="1080" cy="430" r="2.2"/>
+          <circle cx="760" cy="500" r="2"/>
+          <circle cx="600" cy="380" r="1.8"/>
+        </g>
+      </svg>
+    </div>
     <div class="hero-overlay"></div>
 
     <div class="hero-content">
@@ -47,8 +137,8 @@
           <p>Every saree is sourced from master weavers and verified for authenticity.</p>
         </div>
         <div class="feature reveal d1">
-          <div class="ic">❖</div><h4>Matching Blouse</h4>
-          <p>Most sarees include a coordinated blouse piece, detailed in each listing.</p>
+          <div class="ic">❖</div><h4>Curated with Care</h4>
+          <p>Every piece is handpicked and quality-checked, so each saree meets our standard of elegance.</p>
         </div>
         <div class="feature reveal d2">
           <div class="ic">♛</div><h4>Heritage Since 1975</h4>
@@ -106,7 +196,14 @@
         <p class="m-type" data-mtype></p>
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
-        <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+        <div class="m-buy">
+          <div class="qty" data-mqty>
+            <button type="button" data-mstep="-1">−</button>
+            <input type="number" min="1" value="1" data-mqtyinput aria-label="Quantity">
+            <button type="button" data-mstep="1">+</button>
+          </div>
+          <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+        </div>
       </div>
     </div>
   </div>
@@ -228,10 +325,5 @@
     })();
   </script>
 
-  <!-- 3D hero (module) -->
-  <script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
-  </script>
-  <script type="module" src="js/three-hero.js"></script>
 </body>
 </html>
