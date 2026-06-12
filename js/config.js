@@ -13,6 +13,8 @@ window.STORE_CONFIG = {
   phone: "+919711084312",
   instagram: "https://www.instagram.com/threadelegancestore/",
   address: "846-A, Katra Mahesh Das, Nai Sarak, Chandni Chowk, Delhi, India",
+  // Google Maps link for the shop — the address links here wherever it appears.
+  mapsUrl: "https://maps.app.goo.gl/ssD4s1cZA2HSo72E9",
   currency: "₹",
 
   /* ---- Pricing switch (single place, reflected everywhere) ----
