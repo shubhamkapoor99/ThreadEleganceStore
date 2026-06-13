@@ -161,6 +161,66 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   .brand-mark { width: 36px; height: 36px; }
 }
 
+/* ---------- navbar: Shop By Occasion dropdown ---------- */
+.nav-dropdown { position: relative; display: inline-flex; align-items: center; }
+.nav-dropdown-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none;
+  cursor: pointer; font-family: var(--font-sans); font-size: inherit; line-height: inherit; color: inherit; }
+.nav-dropdown-toggle .nd-chevron { transition: transform .25s var(--ease); }
+.nav-dropdown.open .nav-dropdown-toggle .nd-chevron { transform: rotate(180deg); }
+.nav-dropdown-menu { position: absolute; top: calc(100% + 16px); left: 50%; min-width: 200px;
+  background: #fff; border: 1px solid #ecdfcb; border-radius: 14px; box-shadow: var(--shadow-lg); padding: 8px;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(-8px);
+  transition: opacity .25s var(--ease), transform .25s var(--ease), visibility .25s; z-index: 60; }
+.nav-dropdown.open .nav-dropdown-menu { opacity: 1; visibility: visible; pointer-events: auto;
+  transform: translateX(-50%) translateY(0); }
+.nav-dropdown-link { display: block; padding: 10px 14px; border-radius: 9px; color: var(--ink) !important;
+  font-weight: 500; font-size: .95rem; white-space: nowrap; transition: background .2s var(--ease), color .2s var(--ease); }
+.nav-dropdown-link::after { display: none; }
+.nav-dropdown-link:hover { background: var(--ivory-2); color: var(--wine) !important; }
+@media (min-width: 861px) {
+  /* Hover reveals the menu on desktop (click still works too). */
+  .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; pointer-events: auto;
+    transform: translateX(-50%) translateY(0); }
+  .nav-dropdown:hover .nav-dropdown-toggle .nd-chevron { transform: rotate(180deg); }
+  /* Invisible bridge across the gap between the toggle and the menu so moving the
+     cursor down to the options doesn't drop :hover and close the dropdown. */
+  .nav-dropdown-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -20px; height: 20px; }
+}
+@media (max-width: 860px) {
+  .nav-dropdown { width: 100%; flex-direction: column; align-items: stretch; }
+  .nav-dropdown-toggle { width: 100%; justify-content: space-between; padding: 12px 0; font-size: 1.05rem;
+    border-bottom: 1px solid rgba(91,14,45,.08); }
+  .nav-dropdown-menu { position: static; transform: none; min-width: 0; width: 100%; opacity: 1; visibility: visible;
+    box-shadow: none; border: none; border-radius: 0; padding: 0; max-height: 0; overflow: hidden;
+    transition: max-height .3s var(--ease); }
+  .nav-dropdown.open .nav-dropdown-menu { transform: none; max-height: 340px; }
+  .nav-dropdown-link { padding: 11px 0 11px 18px; }
+}
+
+/* ---------- home page: Shop By Occasion button ---------- */
+.home-shop-actions { display: inline-flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.occasion-dropdown { position: relative; display: inline-flex; }
+.occasion-dropdown-toggle { gap: 8px; }
+.occasion-dropdown-toggle .od-chevron { transition: transform .25s var(--ease); }
+.occasion-dropdown.open .occasion-dropdown-toggle .od-chevron { transform: rotate(180deg); }
+.occasion-dropdown-menu { position: absolute; top: calc(100% + 12px); left: 50%; min-width: 210px;
+  background: #fff; border: 1px solid #ecdfcb; border-radius: 14px; box-shadow: var(--shadow-lg); padding: 8px;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(-8px);
+  transition: opacity .25s var(--ease), transform .25s var(--ease), visibility .25s; z-index: 50; }
+.occasion-dropdown.open .occasion-dropdown-menu { opacity: 1; visibility: visible; pointer-events: auto;
+  transform: translateX(-50%) translateY(0); }
+.occasion-dropdown-menu a { display: block; padding: 11px 16px; border-radius: 9px; color: var(--ink);
+  font-weight: 500; font-size: .95rem; text-align: left; transition: background .2s var(--ease), color .2s var(--ease); }
+.occasion-dropdown-menu a:hover { background: var(--ivory-2); color: var(--wine); }
+@media (min-width: 861px) {
+  /* Hover opens the menu on desktop (click still works too). */
+  .occasion-dropdown:hover .occasion-dropdown-menu { opacity: 1; visibility: visible; pointer-events: auto;
+    transform: translateX(-50%) translateY(0); }
+  .occasion-dropdown:hover .occasion-dropdown-toggle .od-chevron { transform: rotate(180deg); }
+  /* Invisible bridge across the gap so moving the cursor down keeps it open. */
+  .occasion-dropdown-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+}
+
 /* ---------- hero ---------- */
 .hero { position: relative; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; overflow: hidden;
   background: radial-gradient(120% 120% at 70% 10%, #2d0716 0%, #5b0e2d 45%, #3d0a1f 100%); color: #fff; }
@@ -543,7 +603,13 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 .summary { background: #fff; border: 1px solid #efe6da; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-md);
   position: sticky; top: 100px; }
 .summary h3 { color: var(--wine); margin-bottom: 18px; }
-.summary .row { display: flex; justify-content: space-between; padding: 10px 0; color: var(--muted); }
+.summary .row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+  padding: 10px 0; color: var(--muted); }
+/* Keep the label (e.g. "Total") on one line; only the value may wrap, and only
+   at spaces — never mid-word — so it can't snap "Total" into "Tota / l". */
+.summary .row > span:first-child { flex: 0 0 auto; white-space: nowrap; }
+.summary .row > span:last-child { flex: 1 1 auto; min-width: 0; text-align: right;
+  word-break: normal; overflow-wrap: break-word; }
 .summary .row.total { border-top: 1px dashed #e0d4c4; margin-top: 8px; padding-top: 16px; color: var(--ink);
   font-size: 1.25rem; font-weight: 700; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
