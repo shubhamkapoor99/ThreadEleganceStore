@@ -6,9 +6,11 @@
 let ALL_PRODUCTS = [];
 let ACTIVE_COLOR = "all";   // lowercased colour key, or "all"
 let ACTIVE_TYPE = "all";    // lowercased saree-cloth key, or "all"
+let ACTIVE_OCCASION = "all";// lowercased occasion tag, or "all"
 let ACTIVE_COLOR_LABEL = "";
 let ACTIVE_COLOR_SWATCH = "";
 let ACTIVE_TYPE_LABEL = "";
+let ACTIVE_OCCASION_LABEL = "";
 let PRICE_BOUNDS = null;    // { min, max } across the catalog (only when prices show)
 let ACTIVE_PRICE = null;    // { min, max } current selection, or null when unused
 
@@ -17,6 +19,7 @@ const sortSel = document.getElementById("sort-select");
 const countLabel = document.getElementById("result-count");
 const colorFilter = document.getElementById("color-filter");
 const typeFilter = document.getElementById("type-filter");
+const occasionFilter = document.getElementById("occasion-filter");
 const priceFilter = document.getElementById("price-filter");
 const priceRow = document.getElementById("price-row");
 
@@ -69,6 +72,10 @@ function renderActiveFilters() {
   const wrap = document.getElementById("filter-active");
   if (!wrap) return;
   const chips = [];
+  if (ACTIVE_OCCASION !== "all") {
+    chips.push(`<span class="active-chip">${ACTIVE_OCCASION_LABEL}
+      <button class="x" type="button" data-clear="occasion" aria-label="Clear occasion filter">&times;</button></span>`);
+  }
   if (ACTIVE_COLOR !== "all") {
     chips.push(`<span class="active-chip">${ACTIVE_COLOR_SWATCH
       ? `<span class="dot" style="background:${ACTIVE_COLOR_SWATCH}"></span>` : ""}${ACTIVE_COLOR_LABEL}
@@ -90,7 +97,12 @@ function renderActiveFilters() {
 
 // Reset a single filter back to its default and refresh the grid.
 function clearFilter(kind) {
-  if (kind === "color") {
+  if (kind === "occasion") {
+    ACTIVE_OCCASION = "all"; ACTIVE_OCCASION_LABEL = "";
+    if (occasionFilter) occasionFilter.querySelectorAll(".chip").forEach((c) =>
+      c.classList.toggle("active", c.dataset.occasion === "all"));
+    setFilterSummary("occasion-current", "All");
+  } else if (kind === "color") {
     ACTIVE_COLOR = "all"; ACTIVE_COLOR_LABEL = ""; ACTIVE_COLOR_SWATCH = "";
     if (colorFilter) colorFilter.querySelectorAll(".chip").forEach((c) =>
       c.classList.toggle("active", c.dataset.color === "all"));
@@ -148,10 +160,46 @@ async function init() {
       Upload images named <b>1_1.jpg, 1_2.jpg…</b> and a <b>1.txt</b> file to start.</div>`;
     return;
   }
+  // Apply a ?occasion=<key> coming from the navbar / home-page "Shop By
+  // Occasion" menus so the page opens with that filter already selected.
+  const urlOccasion = (new URLSearchParams(location.search).get("occasion") || "").trim().toLowerCase();
+  const matchedOccasion = (window.OCCASIONS || []).find((o) => o.key === urlOccasion);
+  if (matchedOccasion) {
+    ACTIVE_OCCASION = matchedOccasion.key;
+    ACTIVE_OCCASION_LABEL = matchedOccasion.label;
+    setFilterSummary("occasion-current", matchedOccasion.label);
+  }
+
   buildColorFilter();
   buildTypeFilter();
+  buildOccasionFilter();
   buildPriceFilter();
+  renderActiveFilters();
   render();
+}
+
+// Build the Shop By Occasion filter chips from the fixed occasion list
+// (Bridal / Wedding / Festive / Everyday), shared with the navbar menu.
+function buildOccasionFilter() {
+  if (!occasionFilter) return;
+  const list = window.OCCASIONS || [];
+
+  const chips = [`<button class="chip${ACTIVE_OCCASION === "all" ? " active" : ""}" data-occasion="all">All</button>`];
+  list.forEach((o) => {
+    chips.push(`<button class="chip${ACTIVE_OCCASION === o.key ? " active" : ""}" data-occasion="${o.key}">${o.label}</button>`);
+  });
+  occasionFilter.innerHTML = chips.join("");
+
+  occasionFilter.querySelectorAll(".chip").forEach((chip) =>
+    chip.addEventListener("click", () => {
+      ACTIVE_OCCASION = chip.dataset.occasion;
+      ACTIVE_OCCASION_LABEL = ACTIVE_OCCASION === "all" ? "" : chip.textContent.trim();
+      occasionFilter.querySelectorAll(".chip").forEach((c) =>
+        c.classList.toggle("active", c.dataset.occasion === ACTIVE_OCCASION));
+      setFilterSummary("occasion-current", chip.textContent.trim());
+      renderActiveFilters();
+      render();
+    }));
 }
 
 // Build the price-range slider — ONLY when prices are shown (config.priceDisplay
@@ -312,6 +360,11 @@ function showSkeleton() {
 
 function getVisible() {
   let list = [...ALL_PRODUCTS];
+  if (ACTIVE_OCCASION !== "all") {
+    list = list.filter((p) =>
+      Array.isArray(p.tags) &&
+      p.tags.some((t) => String(t).trim().toLowerCase() === ACTIVE_OCCASION));
+  }
   if (ACTIVE_COLOR !== "all") {
     list = list.filter((p) => (p.color || "").trim().toLowerCase() === ACTIVE_COLOR);
   }
