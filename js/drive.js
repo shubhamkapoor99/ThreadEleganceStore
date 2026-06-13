@@ -61,13 +61,28 @@ function parseInfoText(text, group) {
     price: 0,
     details: "",
     type: "",          // Saree Cloth / fabric (from the "type" key)
+    tags: [],          // Shop-by-occasion tags (Bridal / Wedding / Festive / Everyday)
   };
   if (!text) return result;
+
+  // Add one (or several comma/slash/"and"-separated) occasion tag(s), stripping
+  // any leading list markers like "1." , "-", "*" so a numbered list works too.
+  const pushTag = (value) => {
+    String(value)
+      .split(/\s*[,/]\s*|\s+and\s+/i)
+      .forEach((part) => {
+        const clean = part.replace(/^\s*(?:\d+[.)]|[-*•])\s*/, "").trim();
+        if (clean && !result.tags.some((t) => t.toLowerCase() === clean.toLowerCase())) {
+          result.tags.push(clean);
+        }
+      });
+  };
 
   const lines = text.replace(/\r/g, "").split("\n");
   const detailParts = [];
   let nameSet = false;          // an explicit Title/Name key was given
   let firstPlainUsedAsName = false;
+  let collectingTags = false;   // inside a "Tag:" section that lists tags on the next lines
 
   lines.forEach((raw) => {
     const line = raw.trim();
@@ -76,21 +91,30 @@ function parseInfoText(text, group) {
     if (m) {
       const key = m[1].trim().toLowerCase();
       const val = m[2].trim();
-      if (key === "name" || key === "title") { result.name = val; nameSet = true; return; }
-      if (key === "color" || key === "colour") { result.color = val; return; }
+      if (key === "name" || key === "title") { result.name = val; nameSet = true; collectingTags = false; return; }
+      if (key === "color" || key === "colour") { result.color = val; collectingTags = false; return; }
       if (key === "type" || key === "cloth" || key === "fabric" || key === "material") {
-        result.type = val; return;
+        result.type = val; collectingTags = false; return;
       }
       if (key === "price" || key === "cost" || key === "mrp") {
         const num = parseInt(val.replace(/[^\d]/g, ""), 10);
         if (!isNaN(num)) result.price = num;
-        return;
+        collectingTags = false; return;
       }
       if (key === "details" || key === "description" || key === "desc" || key === "blouse") {
         if (val) detailParts.push(val);
+        collectingTags = false; return;
+      }
+      if (key === "tag" || key === "tags" || key === "occasion" || key === "occasions") {
+        // Inline form ("Tag: Bridal, Wedding") OR a section header ("Tag:")
+        // followed by a numbered/bulleted list of tags on the lines below.
+        if (val) { pushTag(val); collectingTags = false; }
+        else { collectingTags = true; }
         return;
       }
     }
+    // A non-key line while inside a "Tag:" section is one of the listed tags.
+    if (collectingTags) { pushTag(line); return; }
     // Plain line (no recognised key): the FIRST one becomes the saree title
     // (unless a Title/Name key was already given), the rest become details.
     if (!nameSet && !firstPlainUsedAsName) {
@@ -192,6 +216,7 @@ async function assembleProducts(files, fetchText) {
       price: info.price,
       details: info.details,
       type: info.type,
+      tags: info.tags,
       cover: driveImageUrl(grp.images[0].id, 800),
       coverAlt: driveImageUrlAlt(grp.images[0].id, 800),
       images: grp.images.map((im) => driveImageUrl(im.id, 1600)),
