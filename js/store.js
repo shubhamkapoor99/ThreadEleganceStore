@@ -7,6 +7,16 @@ const CART_KEY = "cart";
 const CFG = window.STORE_CONFIG;
 const money = (n) => `${CFG.currency}${Number(n || 0).toLocaleString("en-IN")}`;
 
+/* ---------- Shop by Occasion ---------------------------------------
+   Single source of truth for the occasion tags, shared by the navbar
+   dropdown, the home-page button, and the Products page filter. */
+const OCCASIONS = [
+  { key: "bridal", label: "Bridal" },
+  { key: "wedding", label: "Wedding" },
+  { key: "festive", label: "Festive" },
+  { key: "everyday", label: "Everyday" },
+];
+
 /* ---------- pricing switch (single source of truth) ----------------
    Driven by STORE_CONFIG.priceDisplay ("ON" / "OFF"). Every page reads
    window.SHOW_PRICE so flipping the config value updates the whole site. */
@@ -165,6 +175,10 @@ function renderChrome(active) {
       `<a href="${href}" class="nav-link ${active === href ? "active" : ""}">${label}</a>`
   ).join("");
 
+  const occasionLinks = OCCASIONS.map(
+    (o) => `<a href="products.html?occasion=${o.key}" class="nav-dropdown-link" role="menuitem">${o.label}</a>`
+  ).join("");
+
   const header = document.querySelector("[data-chrome='header']");
   if (header) {
     header.innerHTML = `
@@ -175,6 +189,15 @@ function renderChrome(active) {
           </a>
           <div class="nav-links" id="navLinks">
             ${navItems}
+            <div class="nav-dropdown" id="navOccasion">
+              <button type="button" class="nav-link nav-dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                Shop By Occasion
+                <svg class="nd-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="nav-dropdown-menu" role="menu">
+                ${occasionLinks}
+              </div>
+            </div>
           </div>
           <div class="nav-right">
             <a href="cart.html" class="nav-cart js-cart-link" aria-label="Cart">
@@ -200,6 +223,25 @@ function renderChrome(active) {
     };
     toggle.addEventListener("click", () => setOpen(!linksEl.classList.contains("open")));
     linksEl.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
+
+    // "Shop By Occasion" dropdown in the navbar (click to toggle; hover also
+    // opens it on desktop via CSS). Closes on outside click or Escape.
+    const occDrop = header.querySelector("#navOccasion");
+    if (occDrop) {
+      const occToggle = occDrop.querySelector(".nav-dropdown-toggle");
+      const setOccOpen = (open) => {
+        occDrop.classList.toggle("open", open);
+        occToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+      occToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setOccOpen(!occDrop.classList.contains("open"));
+      });
+      document.addEventListener("click", (e) => {
+        if (!occDrop.contains(e.target)) setOccOpen(false);
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOccOpen(false); });
+    }
 
     const nav = header.querySelector("#navbar");
     const onScroll = () => {
@@ -303,5 +345,5 @@ Object.assign(window, {
   getCart, setCart, addToCart, setQuantity, removeFromCart, clearCart,
   cartCount, cartTotal, updateCartCount, buildWhatsAppOrder, renderChrome, money,
   productCartShape, addOneToCart,
-  SHOW_PRICE, PRICE_HIDDEN_TEXT, priceLabel,
+  SHOW_PRICE, PRICE_HIDDEN_TEXT, priceLabel, OCCASIONS,
 });
