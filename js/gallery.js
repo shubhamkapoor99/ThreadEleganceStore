@@ -12,7 +12,7 @@
 
   let imgs = [], imgsAlt = [], idx = 0;
 
-  function openGallery(p) {
+  function openGallery(p, preQty) {
     if (!p) return;
     imgs = p.images || [];
     imgsAlt = p.imagesAlt || [];
@@ -33,13 +33,15 @@
           : "<small style='font-size:1rem;color:var(--muted)'>Price on request</small>")
       : "<small style='font-size:1rem;color:var(--muted)'>Price: Calculated on WhatsApp</small>";
 
-    // Quantity stepper inside the gallery view: pre-fill with the amount
-    // already in the cart (or 1), and let the shopper adjust before adding.
+    // Quantity stepper inside the gallery view: mirror whatever the shopper
+    // picked on the product card (preQty), falling back to the amount already
+    // in the cart (or 1), and let them keep adjusting before adding.
     const qtyInput = modal.querySelector("[data-mqtyinput]");
     const qtyWrap = modal.querySelector("[data-mqty]");
     if (qtyInput && qtyWrap) {
+      const preset = Math.max(0, parseInt(preQty) || 0);
       const inCart = window.getCart().find((c) => c.id === p.id);
-      qtyInput.value = inCart ? inCart.quantity : 1;
+      qtyInput.value = preset > 0 ? preset : (inCart ? inCart.quantity : 1);
       qtyWrap.querySelectorAll("button").forEach((btn) => {
         btn.onclick = () => {
           qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) + parseInt(btn.dataset.mstep));
