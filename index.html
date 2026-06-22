@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>ThreadElegance Store</title>
   <meta name="description" content="Timeless elegance, woven in silk. Discover handpicked traditional & contemporary sarees." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +24,49 @@
         <img class="hero-photo" src="TES_HOME_16_9.png" alt="Two women draped in elegant handwoven sarees" />
       </picture>
       <a href="products.html" class="btn hero-shop">Shop Collection</a>
+    </div>
+  </section>
+
+  <!-- ============ FEATURED PRODUCTS ============ -->
+  <section class="section section--featured">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="kicker">Handpicked</span>
+        <h2>Featured Sarees</h2>
+        <p>A glimpse of what's waiting in the collection.</p>
+      </div>
+      <div id="featured-grid" class="product-grid product-grid--featured"></div>
+      <div class="center" style="margin-top:46px">
+        <div class="home-shop-actions">
+          <a href="products.html" class="btn btn-primary">View All Sarees</a>
+          <div class="occasion-dropdown" id="homeOccasion">
+            <button type="button" class="btn btn-outline occasion-dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+              Shop By Occasion
+              <svg class="od-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="occasion-dropdown-menu" role="menu">
+              <a href="products.html?occasion=bridal" role="menuitem">Bridal</a>
+              <a href="products.html?occasion=wedding" role="menuitem">Wedding</a>
+              <a href="products.html?occasion=festive" role="menuitem">Festive</a>
+              <a href="products.html?occasion=everyday" role="menuitem">Everyday</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ YOUTUBE VIDEO ============ -->
+  <!-- Paste your YouTube link in data-youtube below (leave "" to hide). -->
+  <section class="section section--video" id="videoSection" data-youtube="https://youtu.be/h6Mh_qHU4rU?si=hzlEAmrj0tlGfWQj">
+    <div class="container">
+      <div class="video-frame reveal">
+        <iframe id="videoEmbed" src="" title="ThreadElegance video"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen></iframe>
+      </div>
     </div>
   </section>
 
@@ -49,35 +93,6 @@
         <div class="feature reveal d3">
           <div class="ic">✉</div><h4>Order on WhatsApp</h4>
           <p>Simple, personal checkout — confirm your order directly with our team.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ FEATURED PRODUCTS ============ -->
-  <section class="section" style="padding-top:0">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="kicker">Handpicked</span>
-        <h2>Featured Sarees</h2>
-        <p>A glimpse of what's waiting in the collection.</p>
-      </div>
-      <div id="featured-grid" class="product-grid"></div>
-      <div class="center" style="margin-top:46px">
-        <div class="home-shop-actions">
-          <a href="products.html" class="btn btn-primary">View All Sarees</a>
-          <div class="occasion-dropdown" id="homeOccasion">
-            <button type="button" class="btn btn-outline occasion-dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-              Shop By Occasion
-              <svg class="od-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="occasion-dropdown-menu" role="menu">
-              <a href="products.html?occasion=bridal" role="menuitem">Bridal</a>
-              <a href="products.html?occasion=wedding" role="menuitem">Wedding</a>
-              <a href="products.html?occasion=festive" role="menuitem">Festive</a>
-              <a href="products.html?occasion=everyday" role="menuitem">Everyday</a>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -150,6 +165,34 @@
       });
       document.addEventListener("click", (e) => { if (!drop.contains(e.target)) setOpen(false); });
       document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+    })();
+  </script>
+
+  <!-- youtube video embed -->
+  <script>
+    (function () {
+      const section = document.getElementById("videoSection");
+      if (!section) return;
+      const raw = (section.getAttribute("data-youtube") || "").trim();
+      const iframe = document.getElementById("videoEmbed");
+      // Pull the 11-character video id out of any common YouTube URL form.
+      function getId(url) {
+        if (!url) return "";
+        const m = url.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+        if (m) return m[1];
+        if (/^[A-Za-z0-9_-]{11}$/.test(url)) return url; // bare id
+        return "";
+      }
+      const id = getId(raw);
+      if (!id) { section.remove(); return; } // no link → hide the section
+      // Use the privacy-enhanced domain and pass a valid origin when the page
+      // is served over http(s); this avoids YouTube "Error 153" (configuration
+      // error) caused by a missing/invalid referrer.
+      const params = new URLSearchParams({ rel: "0", modestbranding: "1" });
+      if (location.protocol === "http:" || location.protocol === "https:") {
+        params.set("origin", location.origin);
+      }
+      iframe.src = "https://www.youtube-nocookie.com/embed/" + id + "?" + params.toString();
     })();
   </script>
 
