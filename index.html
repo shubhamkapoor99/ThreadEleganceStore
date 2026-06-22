@@ -219,7 +219,7 @@
         const renderFeatured = () => {
           grid.innerHTML = top.map((p) => {
             const inCart = window.getCart().find((c) => c.id === p.id);
-            const qty = inCart ? inCart.quantity : 0;
+            const qty = inCart ? inCart.quantity : 1;
             return `
             <div class="card reveal" data-id="${p.id}">
               <div class="card-inner">
@@ -238,7 +238,7 @@
                     <span class="price">${window.SHOW_PRICE ? (p.price ? window.money(p.price) : "<small>Price on request</small>") : "<small>Price: Calculated on WhatsApp</small>"}</span>
                     <div class="qty" data-qty="${p.id}">
                       <button data-step="-1">−</button>
-                      <input type="number" min="0" value="${qty}" data-input="${p.id}">
+                      <input type="number" min="1" value="${qty}" data-input="${p.id}">
                       <button data-step="1">+</button>
                     </div>
                   </div>
@@ -259,7 +259,13 @@
           else if (q > 0) window.addToCart(window.productCartShape(p), q);
         };
 
-        const openFor = (id) => { const p = top.find((x) => x.id === id); if (p) window.openGallery(p); };
+        const openFor = (id) => {
+          const p = top.find((x) => x.id === id);
+          if (!p) return;
+          const cardInput = grid.querySelector(`[data-input="${id}"]`);
+          const cardQty = cardInput ? parseInt(cardInput.value) || 0 : 0;
+          window.openGallery(p, cardQty);
+        };
 
         function bindFeatured() {
           grid.querySelectorAll("[data-view]").forEach((b) =>
@@ -272,10 +278,10 @@
             q.querySelectorAll("button").forEach((btn) =>
               btn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                input.value = Math.max(0, (parseInt(input.value) || 0) + parseInt(btn.dataset.step));
+                input.value = Math.max(1, (parseInt(input.value) || 1) + parseInt(btn.dataset.step));
               }));
             input.addEventListener("change", () => {
-              input.value = Math.max(0, parseInt(input.value) || 0);
+              input.value = Math.max(1, parseInt(input.value) || 1);
             });
             input.addEventListener("click", (e) => e.stopPropagation());
           });
