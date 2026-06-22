@@ -82,7 +82,12 @@
     const c = window.STORE_CONFIG;
     document.getElementById("wa-card").href = `https://wa.me/${c.whatsappNumber}`;
     const mail = document.getElementById("mail-card");
-    mail.href = `mailto:${c.email}`; document.getElementById("mail-text").textContent = c.email;
+    mail.href = `mailto:${c.email}`;
+    // Allow a clean line break before "@" (name on one line, @domain on the next)
+    // instead of an ugly mid-word split like "...@g / mail.com".
+    const safeEmail = c.email.replace(/[&<>"]/g, (ch) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    document.getElementById("mail-text").innerHTML = safeEmail.replace("@", "<wbr>@");
     const call = document.getElementById("call-card");
     call.href = `tel:${c.phone}`; document.getElementById("call-text").textContent = c.phone;
     const insta = document.getElementById("insta-card");
