@@ -399,7 +399,7 @@ function render() {
 
   grid.innerHTML = list.map((p, i) => {
     const inCart = window.getCart().find((c) => c.id === p.id);
-    const qty = inCart ? inCart.quantity : 0;
+    const qty = inCart ? inCart.quantity : 1;
     const priceHtml = window.SHOW_PRICE
       ? (p.price
           ? `<span class="price">${window.money(p.price)}</span>`
@@ -428,7 +428,7 @@ function render() {
               ${priceHtml}
               <div class="qty" data-qty="${p.id}">
                 <button data-step="-1">−</button>
-                <input type="number" min="0" value="${qty}" data-input="${p.id}">
+                <input type="number" min="1" value="${qty}" data-input="${p.id}">
                 <button data-step="1">+</button>
               </div>
             </div>
@@ -448,7 +448,11 @@ function render() {
 function bindCardEvents() {
   const open = (id) => {
     const p = ALL_PRODUCTS.find((x) => x.id === id);
-    if (p) window.openGallery(p);
+    if (!p) return;
+    // Carry the quantity currently selected on the card into the modal.
+    const cardInput = grid.querySelector(`[data-input="${id}"]`);
+    const cardQty = cardInput ? parseInt(cardInput.value) || 0 : 0;
+    window.openGallery(p, cardQty);
   };
   grid.querySelectorAll("[data-view]").forEach((b) =>
     b.addEventListener("click", (e) => { e.stopPropagation(); open(b.dataset.view); }));
@@ -461,10 +465,10 @@ function bindCardEvents() {
     q.querySelectorAll("button").forEach((btn) =>
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        input.value = Math.max(0, (parseInt(input.value) || 0) + parseInt(btn.dataset.step));
+        input.value = Math.max(1, (parseInt(input.value) || 1) + parseInt(btn.dataset.step));
       }));
     input.addEventListener("change", () => {
-      input.value = Math.max(0, parseInt(input.value) || 0);
+      input.value = Math.max(1, parseInt(input.value) || 1);
     });
     input.addEventListener("click", (e) => e.stopPropagation());
   });
