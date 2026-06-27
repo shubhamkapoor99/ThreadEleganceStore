@@ -517,7 +517,7 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 /* Touch devices have no hover, so always show the "View Gallery" button and let
    a single tap on the image / button open the saree straight away. */
 @media (hover: none) { .card-view { transform: none; opacity: 1; } }
-.card-body { padding: 13px 15px 16px; transform: translateZ(40px); }
+.card-body { padding: 13px 15px 13px; transform: translateZ(40px); }
 .card-body h3 { font-size: 1.02rem; color: var(--wine); font-family: var(--font-serif); margin-bottom: 4px;
   line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden; }
@@ -589,16 +589,32 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 .qty input::-webkit-outer-spin-button, .qty input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
 /* ---------- gallery modal ---------- */
-.modal { position: fixed; inset: 0; z-index: 200; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal { position: fixed; inset: 0; z-index: 200; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; }
 .modal.open { display: block; }
 .modal-bg { position: absolute; inset: 0; background: rgba(20,6,14,.86); backdrop-filter: blur(8px); }
 .modal-card { position: relative; z-index: 2; max-width: 1040px; max-height: 90vh; margin: 5vh auto; background: var(--ivory);
-  border-radius: 22px; overflow-y: auto; display: grid; grid-template-columns: 1.1fr .9fr;
+  border-radius: 22px; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: 1.1fr .9fr;
   box-shadow: var(--shadow-lg); animation: pop .45s var(--ease); }
 @keyframes pop { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:none} }
 .modal-gallery { background: #1c0813; position: relative; display: flex; flex-direction: column; }
-.mg-stage { position: relative; flex: 1; min-height: 420px; display: grid; place-items: center; overflow: hidden; }
-.mg-stage img { width: 100%; height: 100%; object-fit: contain; max-height: 70vh; }
+.mg-stage { position: relative; flex: 1; min-height: 420px; overflow: hidden; }
+/* Horizontal slider: all slides sit side by side and the track translates. */
+.mg-track { display: flex; height: 100%; min-height: inherit; width: 100%;
+  transition: transform .42s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
+.mg-slide { position: relative; flex: 0 0 100%; width: 100%; display: grid; place-items: center; overflow: hidden; }
+.mg-slide img { grid-area: 1 / 1; width: 100%; height: 100%; object-fit: contain; max-height: 70vh; }
+/* The low-res preview shows instantly (sharp, no blur); the hi-res fades in
+   on top of it the moment it has finished loading. */
+.mg-slide .mg-base { z-index: 1; }
+.mg-slide .mg-hi { z-index: 2; opacity: 0; transition: opacity .25s ease; }
+.mg-slide .mg-hi.loaded { opacity: 1; }
+/* Keep the legacy single-image rule from forcing a height on the hidden node. */
+.mg-stage > img[data-mstage] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mg-track { transition: none; }
+  .mg-slide .mg-hi { transition: none; }
+}
 .mg-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%;
   border: none; background: var(--gold); color: #2a1a05; cursor: pointer; display: grid; place-items: center;
   font-size: 1.3rem; backdrop-filter: blur(6px); transition: .25s; z-index: 3;
@@ -620,18 +636,43 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 .modal-info .m-type .m-type-label { color: var(--muted); font-weight: 600; }
 .modal-info .m-details { color: #5a4d51; flex: 1; margin-bottom: 22px; }
 .modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; }
-.modal-info .m-buy { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.modal-info .m-buy .qty { flex: 0 0 auto; }
-.modal-info .m-buy .btn { flex: 1 1 auto; min-width: 160px; }
+/* Mirror the product card: a "Buy Now" (outline) + "Add to Cart" (primary)
+   pair sharing the row, each growing to fill the available width. */
+.modal-info .m-buy { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.modal-info .m-buy .btn { flex: 1 1 auto; min-width: 140px; justify-content: center; }
 @media (max-width: 460px) {
-  .modal-info .m-buy { gap: 10px; flex-wrap: nowrap; align-items: center; }
-  .modal-info .m-buy .qty { flex: 0 0 auto; }
-  .modal-info .m-buy .btn { flex: 1 1 auto; width: auto; min-width: 0; flex-basis: auto;
-    padding: 12px 16px; font-size: .9rem; white-space: nowrap; }
+  .modal-info .m-buy { gap: 10px; flex-wrap: nowrap; }
+  .modal-info .m-buy .btn { flex: 1 1 0; width: auto; min-width: 0;
+    padding: 12px 14px; font-size: .9rem; white-space: nowrap; }
 }
-.modal-close { position: absolute; top: 16px; right: 16px; z-index: 5; width: 40px; height: 40px; border-radius: 50%;
-  border: none; background: rgba(255,255,255,.9); cursor: pointer; font-size: 1.4rem; color: var(--wine); }
-@media (max-width: 820px) { .modal-card { grid-template-columns: 1fr; margin: 0; min-height: 100%; max-height: none; border-radius: 0; } .mg-stage { min-height: 46vh; } .modal-info { padding: 26px 22px; } }
+/* Pinned to the viewport so the close button stays reachable no matter how far
+   the modal content is scrolled. */
+.modal-close { position: fixed; top: 16px; right: 16px; z-index: 250; width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,.92); box-shadow: var(--shadow-md); cursor: pointer;
+  font-size: 1.4rem; color: var(--wine); }
+@media (max-width: 820px) {
+  /* On phones the card no longer scrolls internally — the whole .modal scrolls.
+     overflow:visible (not auto) stops the card from being a zero-length scroll
+     container that would otherwise swallow the touch gesture and block scroll. */
+  .modal-card { grid-template-columns: 1fr; margin: 0; min-height: 100%; max-height: none; border-radius: 0;
+    overflow: visible; overscroll-behavior: auto; }
+  .mg-stage { min-height: 46vh; }
+  .modal-info { padding: 26px 22px; }
+}
+
+/* ---------- toast / snackbar ---------- */
+.te-toast { position: fixed; left: 50%; top: 24px; transform: translate(-50%, -24px);
+  z-index: 400; width: min(92vw, 440px); padding: 14px 18px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.25); background: var(--wine); color: #fff;
+  font-size: .9rem; font-weight: 500; line-height: 1.4; box-shadow: var(--shadow-lg);
+  opacity: 0; visibility: hidden;
+  transition: opacity .28s var(--ease), transform .28s var(--ease), visibility .28s; }
+.te-toast.show { opacity: 1; transform: translate(-50%, 0); visibility: visible; }
+.te-toast-msg { display: block; padding-right: 22px; }
+.te-toast-close { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border: none;
+  border-radius: 5px; background: rgba(255,255,255,.14); color: #fff; font-size: 1.15rem; line-height: 1;
+  cursor: pointer; display: grid; place-items: center; transition: background .2s ease; }
+.te-toast-close:hover { background: rgba(255,255,255,.28); }
 
 /* ---------- states ---------- */
 .notice { text-align: center; padding: 40px; border-radius: var(--radius); background: #fff;
@@ -648,12 +689,20 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 
 /* ---------- cart page ---------- */
 .cart-wrap { display: grid; grid-template-columns: 1.6fr .9fr; gap: 34px; align-items: start; }
-.cart-item { display: grid; grid-template-columns: 96px 1fr auto; gap: 18px; background: #fff; border: 1px solid #efe6da;
-  border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 16px; align-items: center; }
-.cart-item img { width: 96px; height: 120px; object-fit: cover; border-radius: 12px; }
-.cart-item h4 { color: var(--wine); font-family: var(--font-sans); font-size: 1.05rem; }
-.cart-item .ci-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.cart-item { display: grid; grid-template-columns: 72px 1fr auto; gap: 16px; background: #fff; border: 1px solid #efe6da;
+  border-radius: 14px; padding: 12px 16px; box-shadow: var(--shadow-sm); margin-bottom: 12px; align-items: center; }
+.cart-item img { width: 72px; height: 90px; object-fit: cover; border-radius: 10px; }
+.cart-item h4 { color: var(--wine); font-family: var(--font-sans); font-size: 1.02rem; }
+.cart-item .ci-info { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; }
 .cart-item .ci-info h4 { overflow-wrap: anywhere; }
+.ci-qty { display: inline-flex; align-items: center; gap: 8px; }
+.ci-qty-label { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.ci-qty select { padding: 6px 28px 6px 12px; border: 1.5px solid #e6dccd; border-radius: 999px;
+  font-family: var(--font-sans); font-size: .9rem; color: var(--wine); background-color: #fff; cursor: pointer;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b0e2d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center; background-size: 14px; }
+.ci-qty select:focus { outline: none; border-color: var(--gold); }
 .cart-item .ci-color { color: var(--muted); font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
 .cart-item .ci-color .dot { width: 11px; height: 11px; border-radius: 50%; }
 .cart-item .ci-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
