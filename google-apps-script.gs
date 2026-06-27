@@ -21,7 +21,18 @@
  */
 
 var FOLDER_ID = '19LjKR9KSomQOVc5r_S8fneon4uQYtZTd';
-var CACHE_TTL_SECONDS = 300;   // re-read the Drive folder at most once every 5 min
+// Keep the built catalog cached for the maximum allowed (6 h) so it never goes
+// cold on its own between visits.
+var CACHE_TTL_SECONDS = 21600;   // 6 hours (CacheService maximum)
+
+/**
+ * KEEP IT ALWAYS-FAST (no external pinger needed):
+ * Add a time-driven trigger that runs warmCache() every 10 minutes —
+ *   Apps Script editor  ->  Triggers (clock icon)  ->  Add Trigger
+ *   Function: warmCache | Event source: Time-driven | Minutes timer: Every 10 minutes
+ * That rebuilds the cache on Google's own servers, so the slow blob-read is
+ * never paid by a real visitor and the catalog also stays current automatically.
+ */
 
 function doGet(e) {
   var fresh = e && e.parameter && e.parameter.fresh;   // ?fresh=1 forces a rebuild
@@ -34,6 +45,17 @@ function doGet(e) {
     if (hit) return out_(hit);
   }
 
+  return out_(buildCatalog_(cache));
+}
+
+// Time-driven trigger target: rebuild + cache the catalog on a schedule so the
+// cache is always warm for real visitors. Safe to run manually too.
+function warmCache() {
+  buildCatalog_(CacheService.getScriptCache());
+}
+
+// Reads the whole folder, bundles each .txt inline, caches the JSON, returns it.
+function buildCatalog_(cache) {
   var folder = DriveApp.getFolderById(FOLDER_ID);
   var files = folder.getFiles();
   var arr = [];
@@ -55,7 +77,7 @@ function doGet(e) {
 
   var payload = JSON.stringify(arr);
   writeCache_(cache, payload, CACHE_TTL_SECONDS);
-  return out_(payload);
+  return payload;
 }
 
 function out_(payload) {
