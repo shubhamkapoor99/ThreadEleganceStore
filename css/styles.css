@@ -590,15 +590,19 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 
 /* ---------- gallery modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 200; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain; }
+  overscroll-behavior: none; }
 .modal.open { display: block; }
+/* Freeze the page behind the modal so a hard/rubber-band scroll can't drag the
+   site into view underneath the card. */
+body.modal-open { overflow: hidden; }
+html:has(body.modal-open) { overflow: hidden; }
 .modal-bg { position: absolute; inset: 0; background: rgba(20,6,14,.86); backdrop-filter: blur(8px); }
-.modal-card { position: relative; z-index: 2; max-width: 1040px; max-height: 90vh; margin: 5vh auto; background: var(--ivory);
-  border-radius: 22px; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: 1.1fr .9fr;
+.modal-card { position: relative; z-index: 2; max-width: 1040px; height: 90vh; max-height: 90vh; margin: 5vh auto; background: var(--ivory);
+  border-radius: 22px; overflow: hidden; overscroll-behavior: contain; display: grid; grid-template-columns: 1.1fr .9fr;
   box-shadow: var(--shadow-lg); animation: pop .45s var(--ease); }
 @keyframes pop { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:none} }
-.modal-gallery { background: #1c0813; position: relative; display: flex; flex-direction: column; }
-.mg-stage { position: relative; flex: 1; min-height: 420px; overflow: hidden; }
+.modal-gallery { background: #1c0813; position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.mg-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 /* Horizontal slider: all slides sit side by side and the track translates. */
 .mg-track { display: flex; height: 100%; min-height: inherit; width: 100%;
   transition: transform .42s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
@@ -626,7 +630,7 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   border: 2px solid transparent; transition: .25s; flex: 0 0 auto; }
 .mg-thumbs img.active { opacity: 1; border-color: var(--gold); }
 @media (hover: hover) { .mg-thumbs img:hover { opacity: 1; border-color: var(--gold); } }
-.modal-info { padding: 38px 34px; display: flex; flex-direction: column; }
+.modal-info { padding: 38px 34px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .modal-info h2 { color: var(--wine); font-size: 2rem; margin-bottom: 10px; }
 .modal-info .m-color { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 18px; }
 .modal-info .m-color .dot { width: 16px; height: 16px; border-radius: 50%; }
@@ -634,7 +638,8 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   margin-bottom: 16px; padding: 6px 14px; border-radius: 999px; font-size: .9rem; font-weight: 600;
   color: var(--wine); background: var(--ivory-2); border: 1px solid #ecdfcb; }
 .modal-info .m-type .m-type-label { color: var(--muted); font-weight: 600; }
-.modal-info .m-details { color: #5a4d51; flex: 1; margin-bottom: 22px; }
+.modal-info .m-details { color: #5a4d51; flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 22px;
+  padding-right: 6px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; }
 /* Mirror the product card: a "Buy Now" (outline) + "Add to Cart" (primary)
    pair sharing the row, each growing to fill the available width. */
@@ -654,10 +659,17 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   /* On phones the card no longer scrolls internally — the whole .modal scrolls.
      overflow:visible (not auto) stops the card from being a zero-length scroll
      container that would otherwise swallow the touch gesture and block scroll. */
-  .modal-card { grid-template-columns: 1fr; margin: 0; min-height: 100%; max-height: none; border-radius: 0;
-    overflow: visible; overscroll-behavior: auto; }
+  /* Solid backdrop + locked page mean a hard scroll past the card's top or
+     bottom shows this dark colour, never the website behind it. */
+  .modal { background: #160611; }
+  .modal-card { grid-template-columns: 1fr; margin: 0; height: auto; min-height: 100%; max-height: none; border-radius: 0;
+    overflow: visible; overscroll-behavior: contain; }
+  .modal-gallery { overflow: visible; }
   .mg-stage { min-height: 46vh; }
-  .modal-info { padding: 26px 22px; }
+  .modal-info { padding: 26px 22px; overflow: visible; }
+  /* The whole modal scrolls on phones, so let the description flow naturally
+     instead of becoming its own scroll region. */
+  .modal-info .m-details { overflow-y: visible; min-height: 0; padding-right: 0; }
 }
 
 /* ---------- toast / snackbar ---------- */
