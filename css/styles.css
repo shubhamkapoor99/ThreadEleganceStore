@@ -732,6 +732,12 @@ html:has(body.modal-open) { overflow: hidden; }
 .summary { background: #fff; border: 1px solid #efe6da; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-md);
   position: sticky; top: 100px; }
 .summary h3 { color: var(--wine); margin-bottom: 18px; }
+.summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 18px; }
+.summary-head h3 { margin-bottom: 0; }
+.clear-cart-link { background: none; border: none; padding: 4px 2px; cursor: pointer; font-family: var(--font-sans);
+  font-size: .85rem; font-weight: 600; color: #c0392b; white-space: nowrap; transition: opacity .2s ease; }
+.clear-cart-link:hover { opacity: .7; text-decoration: underline; }
 .summary .row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
   padding: 10px 0; color: var(--muted); }
 /* Keep the label (e.g. "Total") on one line; only the value may wrap, and only
