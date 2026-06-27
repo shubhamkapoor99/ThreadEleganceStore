@@ -133,12 +133,8 @@
         <p class="m-details" data-mdetails></p>
         <div class="m-price gold-text" data-mprice></div>
         <div class="m-buy">
-          <div class="qty" data-mqty>
-            <button type="button" data-mstep="-1">−</button>
-            <input type="number" min="1" value="1" data-mqtyinput aria-label="Quantity">
-            <button type="button" data-mstep="1">+</button>
-          </div>
-          <button class="btn btn-gold" data-madd style="justify-content:center">Add to Cart</button>
+          <button class="btn btn-outline" data-mbuy style="justify-content:center">Buy Now</button>
+          <button class="btn btn-primary" data-madd style="justify-content:center">Add to Cart</button>
         </div>
       </div>
     </div>
@@ -223,8 +219,6 @@
         }
         const renderFeatured = () => {
           grid.innerHTML = top.map((p) => {
-            const inCart = window.getCart().find((c) => c.id === p.id);
-            const qty = inCart ? inCart.quantity : 1;
             return `
             <div class="card reveal" data-id="${p.id}">
               <div class="card-inner">
@@ -243,11 +237,7 @@
                   ${p.type && p.type.trim() ? `<span class="card-tag">${p.type.trim()}</span>` : ""}
                   <div class="card-foot">
                     <span class="price">${window.SHOW_PRICE ? (p.price ? window.money(p.price) : "<small>Price on request</small>") : "<small>Price: Calculated on WhatsApp</small>"}</span>
-                    <div class="qty" data-qty="${p.id}">
-                      <button data-step="-1">−</button>
-                      <input type="number" min="1" value="${qty}" data-input="${p.id}">
-                      <button data-step="1">+</button>
-                    </div>
+                    <button class="btn btn-outline" data-buy="${p.id}">Buy Now</button>
                     <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
                   </div>
                 </div>
@@ -258,18 +248,10 @@
           window.initReveal(grid); window.initTilt(grid);
         };
 
-        const commitQty = (p, q) => {
-          const exists = window.getCart().some((c) => c.id === p.id);
-          if (exists) window.setQuantity(p.id, q);
-          else if (q > 0) window.addToCart(window.productCartShape(p), q);
-        };
-
         const openFor = (id) => {
           const p = top.find((x) => x.id === id);
           if (!p) return;
-          const cardInput = grid.querySelector(`[data-input="${id}"]`);
-          const cardQty = cardInput ? parseInt(cardInput.value) || 0 : 0;
-          window.openGallery(p, cardQty);
+          window.openGallery(p);
         };
 
         function bindFeatured() {
@@ -278,29 +260,33 @@
           grid.querySelectorAll(".card-media img").forEach((img) =>
             img.addEventListener("click", () => openFor(img.closest(".card").dataset.id)));
 
-          grid.querySelectorAll("[data-qty]").forEach((q) => {
-            const input = q.querySelector("input");
-            q.querySelectorAll("button").forEach((btn) =>
-              btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                input.value = Math.max(1, (parseInt(input.value) || 1) + parseInt(btn.dataset.step));
-              }));
-            input.addEventListener("change", () => {
-              input.value = Math.max(1, parseInt(input.value) || 1);
-            });
-            input.addEventListener("click", (e) => e.stopPropagation());
+          grid.querySelectorAll(".card").forEach((card) => {
+            const warm = () => {
+              const p = top.find((x) => x.id === card.dataset.id);
+              if (p && typeof window.primeGallery === "function") window.primeGallery(p);
+            };
+            card.addEventListener("pointerenter", warm, { once: true });
+            card.addEventListener("touchstart", warm, { once: true, passive: true });
           });
 
           grid.querySelectorAll("[data-add]").forEach((b) =>
             b.addEventListener("click", (e) => {
               e.stopPropagation();
               const p = top.find((x) => x.id === b.dataset.add);
-              const input = grid.querySelector(`[data-input="${p.id}"]`);
-              const qty = Math.max(1, parseInt(input.value) || 1);
-              input.value = qty;
-              commitQty(p, qty);
-              b.textContent = "Added ✓";
-              setTimeout(() => (b.textContent = "Add to Cart"), 1200);
+              if (!p) return;
+              window.addOneToCart(p);
+              const inCart = window.getCart().find((c) => c.id === p.id);
+              const count = inCart ? inCart.quantity : 1;
+              window.showToast(`Added to cart — quantity is now ${count} for ${p.name}.`);
+            }));
+
+          grid.querySelectorAll("[data-buy]").forEach((b) =>
+            b.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const p = top.find((x) => x.id === b.dataset.buy);
+              if (!p) return;
+              if (!window.getCart().some((c) => c.id === p.id)) window.addOneToCart(p);
+              window.location.href = "cart.html";
             }));
         }
 
