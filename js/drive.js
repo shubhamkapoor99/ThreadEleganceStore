@@ -11,14 +11,32 @@ const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 // NOTE: the file/folder must be shared "Anyone with the link -> Viewer",
 // otherwise every one of these returns 403 / a sign-in page and the <img>
 // falls back to the placeholder.
-function driveImageUrl(id, size = 1600) {
-  // lh3 tends to be the most reliable for real photos at larger sizes.
-  return `https://lh3.googleusercontent.com/d/${id}=w${size}`;
+// Free, no-account image CDN (Cloudflare-backed wsrv.nl). It fetches the public
+// Drive image once, resizes it, converts it to lightweight WebP, and serves it
+// from a global edge cache — so repeat views are fast and Drive's slow
+// on-the-fly resizing / rate-limiting is bypassed. No API key, no signup, no cost.
+function wsrvImg(srcUrl, size) {
+  const params = new URLSearchParams({
+    url: srcUrl, w: String(size), output: "webp", q: "82",
+  });
+  return `https://wsrv.nl/?${params.toString()}`;
 }
 
-// Alternate endpoint, used as an automatic onerror fallback.
+function driveImageUrl(id, size = 1600) {
+  // Primary: optimised, edge-cached WebP sourced from the public Drive image.
+  return wsrvImg(`https://lh3.googleusercontent.com/d/${id}=w${size}`, size);
+}
+
+// Automatic onerror fallback: go straight to Drive's own thumbnail endpoint
+// (different infrastructure + transcodes any format) if the CDN is unavailable.
 function driveImageUrlAlt(id, size = 1600) {
   return `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;
+}
+
+// Build a responsive srcset (several widths) for a Drive image, so phones pull
+// a small file and large screens a bigger one — all via the same free CDN.
+function driveImageSrcset(id, widths = [320, 480, 640, 800]) {
+  return widths.map((w) => `${driveImageUrl(id, w)} ${w}w`).join(", ");
 }
 
 // Global <img> error handler: try the alternate Drive endpoint once, then
@@ -28,10 +46,12 @@ window.driveImgError = function (img) {
   const alt = img.getAttribute("data-alt");
   if (alt && !img.dataset.triedAlt) {
     img.dataset.triedAlt = "1";
+    img.removeAttribute("srcset");   // force the browser to use the fallback src
     img.src = alt;
     return;
   }
   img.onerror = null;
+  img.removeAttribute("srcset");
   img.src = "https://placehold.co/600x800/f3ebe0/8a7c80?text=Saree";
   img.classList.add("loaded");
 };
@@ -172,30 +192,40 @@ async function listViaAppsScript(url) {
   if (!res.ok) throw new Error(`Apps Script ${res.status}`);
   const data = await res.json();
   const files = Array.isArray(data) ? data : (data.files || []);
-  return files.map((f) => ({ name: f.name, id: f.id, text: f.text }));
+  return files.map((f) => ({ name: f.name, id: f.id, text: f.text, mimeType: f.mimeType }));
 }
 
 /* ---- group files into products (shared by both sources) --------- */
 async function assembleProducts(files, fetchText) {
   const groups = {};   // group -> { images:[{n,id}], txtId, txtText }
-  const imageRe = /^(\w+?)_(\d+)\.(jpe?g|png|webp|gif|avif)$/i;
-  const singleRe = /^(\w+?)\.(jpe?g|png|webp|gif|avif)$/i;
   const txtRe = /^(\w+?)\.txt$/i;
+  // A generous extension list — but we primarily trust the Drive MIME type, so
+  // ANY image format Drive recognises (incl. iPhone .heic/.heif, .jfif, .tiff,
+  // .bmp, .svg, …) is picked up, not just .png. Drive transparently serves a
+  // browser-friendly version, and the <img> onerror fallback covers the rest.
+  const imageExtRe = /\.(jpe?g|jfif|pjpe?g|png|apng|webp|gif|avif|bmp|dib|heic|heif|tiff?|svg|ico)$/i;
+  const isImageFile = (f) =>
+    (f.mimeType && /^image\//i.test(f.mimeType)) || imageExtRe.test(f.name || "");
 
   for (const f of files) {
+    const name = f.name || "";
     let m;
-    if ((m = f.name.match(imageRe))) {
-      const g = m[1], n = parseInt(m[2], 10);
-      (groups[g] ||= { images: [], txtId: null, txtText: undefined }).images.push({ n, id: f.id });
-    } else if ((m = f.name.match(singleRe))) {
-      const g = m[1];
-      (groups[g] ||= { images: [], txtId: null, txtText: undefined }).images.push({ n: 1, id: f.id });
-    } else if ((m = f.name.match(txtRe))) {
+    if ((m = name.match(txtRe))) {
       const g = m[1];
       const grp = (groups[g] ||= { images: [], txtId: null, txtText: undefined });
       grp.txtId = f.id;
       if (typeof f.text === "string") grp.txtText = f.text;   // inline text (Apps Script)
+      continue;
     }
+    if (!isImageFile(f)) continue;
+    // Read the "<group>_<n>" (or single "<group>") name AFTER dropping whatever
+    // image extension it has, so grouping no longer depends on the file type.
+    const base = name.replace(/\.[^.]+$/, "").trim();
+    let g, n;
+    if ((m = base.match(/^(\w+?)_(\d+)$/))) { g = m[1]; n = parseInt(m[2], 10); }
+    else if ((m = base.match(/^(\w+)$/)))   { g = m[1]; n = 1; }
+    else continue;
+    (groups[g] ||= { images: [], txtId: null, txtText: undefined }).images.push({ n, id: f.id });
   }
 
   const groupKeys = Object.keys(groups);
@@ -217,8 +247,9 @@ async function assembleProducts(files, fetchText) {
       details: info.details,
       type: info.type,
       tags: info.tags,
-      cover: driveImageUrl(grp.images[0].id, 800),
-      coverAlt: driveImageUrlAlt(grp.images[0].id, 800),
+      cover: driveImageUrl(grp.images[0].id, 600),
+      coverAlt: driveImageUrlAlt(grp.images[0].id, 600),
+      coverSrcset: driveImageSrcset(grp.images[0].id),
       images: grp.images.map((im) => driveImageUrl(im.id, 1600)),
       imagesAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 1600)),
       thumbs: grp.images.map((im) => driveImageUrl(im.id, 220)),
@@ -234,25 +265,92 @@ async function assembleProducts(files, fetchText) {
   return products;
 }
 
-/* ---- main loader ------------------------------------------------- */
+/* ---- catalog cache ----------------------------------------------
+   The Drive/Apps-Script feed (which already bundles every saree's .txt text)
+   is the slowest part of a page load, and each page — home, products, cart —
+   used to refetch the WHOLE catalog independently. We cache the assembled
+   products so the feed is fetched once and reused across pages/reloads:
+     • sessionStorage  -> instant when moving between pages in the same tab
+     • localStorage    -> survives reloads/new tabs for a short TTL
+   Add "?fresh=1" to any URL to bypass the cache and pull the latest from Drive. */
+const CATALOG_CACHE_KEY = "te_catalog_v2";   // bump when cached image URLs change
+const CATALOG_TTL_MS = 10 * 60 * 1000;   // 10 minutes
 
-async function loadProductsFromDrive() {
-  const cfg = window.STORE_CONFIG.drive || {};
+// Returns { products, fresh } or null. `fresh` is false once the copy is older
+// than the TTL — we still return it (so the page can paint instantly) but the
+// caller can revalidate in the background.
+function readCatalogCache() {
+  try {
+    const raw =
+      sessionStorage.getItem(CATALOG_CACHE_KEY) ||
+      localStorage.getItem(CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || !obj.t || !Array.isArray(obj.products) || !obj.products.length) return null;
+    return { products: obj.products, fresh: (Date.now() - obj.t) <= CATALOG_TTL_MS };
+  } catch (e) { return null; }
+}
 
-  // Option A (recommended): Google Apps Script web app — no API key needed.
+function writeCatalogCache(products) {
+  if (!Array.isArray(products) || !products.length) return;
+  try {
+    const raw = JSON.stringify({ t: Date.now(), products });
+    try { sessionStorage.setItem(CATALOG_CACHE_KEY, raw); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(CATALOG_CACHE_KEY, raw); } catch (e) { /* ignore */ }
+  } catch (e) { /* ignore */ }
+}
+
+// Pull a fresh catalog straight from the configured source (no cache).
+// Returns an array of products, or null when Drive isn't configured yet.
+async function fetchFreshCatalog(cfg) {
   if (cfg.appsScriptUrl) {
     const files = await listViaAppsScript(cfg.appsScriptUrl);
-    const products = await assembleProducts(files, null);
-    return { products };
+    return await assembleProducts(files, null);
   }
-
-  // Option B: Drive API key.
   if (cfg.apiKey && cfg.folderId) {
     const files = await listDriveFiles(cfg.folderId, cfg.apiKey);
-    const products = await assembleProducts(
-      files, (id) => fetchTextFile(id, cfg.apiKey)
-    );
-    return { products };
+    return await assembleProducts(files, (id) => fetchTextFile(id, cfg.apiKey));
+  }
+  return null;
+}
+
+/* ---- main loader ------------------------------------------------- */
+// opts.onUpdate(result) — optional callback fired when a background refresh
+// finds newer data than the cached copy that was returned (stale-while-revalidate),
+// so the grid can repaint with the latest sarees without blocking first paint.
+
+async function loadProductsFromDrive(opts = {}) {
+  const cfg = window.STORE_CONFIG.drive || {};
+  const wantsFresh = /[?&]fresh=1\b/.test(location.search);
+
+  // Serve the cached catalog INSTANTLY for a fast first paint. If it's stale,
+  // refresh in the background and notify the caller only if something changed.
+  if (!wantsFresh) {
+    const cached = readCatalogCache();
+    if (cached) {
+      if (!cached.fresh) {
+        (async () => {
+          try {
+            const updated = await fetchFreshCatalog(cfg);
+            if (Array.isArray(updated) && updated.length) {
+              writeCatalogCache(updated);
+              if (typeof opts.onUpdate === "function" &&
+                  JSON.stringify(updated) !== JSON.stringify(cached.products)) {
+                opts.onUpdate({ products: updated });
+              }
+            }
+          } catch (e) { /* keep showing the cached catalog */ }
+        })();
+      }
+      return { products: cached.products, cached: true };
+    }
+  }
+
+  // No usable cache (e.g. very first visit): fetch fresh and block until ready.
+  const fresh = await fetchFreshCatalog(cfg);
+  if (Array.isArray(fresh)) {
+    writeCatalogCache(fresh);
+    return { products: fresh };
   }
 
   // Not configured yet.
@@ -261,3 +359,5 @@ async function loadProductsFromDrive() {
 
 window.loadProductsFromDrive = loadProductsFromDrive;
 window.colorToSwatch = colorToSwatch;
+window.driveImageUrl = driveImageUrl;
+window.driveImageSrcset = driveImageSrcset;
