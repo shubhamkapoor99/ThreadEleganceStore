@@ -411,8 +411,6 @@ function render() {
   }
 
   grid.innerHTML = list.map((p, i) => {
-    const inCart = window.getCart().find((c) => c.id === p.id);
-    const qty = inCart ? inCart.quantity : 1;
     const priceHtml = window.SHOW_PRICE
       ? (p.price
           ? `<span class="price">${window.money(p.price)}</span>`
@@ -438,11 +436,7 @@ function render() {
               : ""}
             <div class="card-foot">
               ${priceHtml}
-              <div class="qty" data-qty="${p.id}">
-                <button data-step="-1">−</button>
-                <input type="number" min="1" value="${qty}" data-input="${p.id}">
-                <button data-step="1">+</button>
-              </div>
+              <button class="btn btn-outline" data-buy="${p.id}">Buy Now</button>
               <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
             </div>
           </div>
@@ -459,48 +453,45 @@ function bindCardEvents() {
   const open = (id) => {
     const p = ALL_PRODUCTS.find((x) => x.id === id);
     if (!p) return;
-    // Carry the quantity currently selected on the card into the modal.
-    const cardInput = grid.querySelector(`[data-input="${id}"]`);
-    const cardQty = cardInput ? parseInt(cardInput.value) || 0 : 0;
-    window.openGallery(p, cardQty);
+    window.openGallery(p);
   };
   grid.querySelectorAll("[data-view]").forEach((b) =>
     b.addEventListener("click", (e) => { e.stopPropagation(); open(b.dataset.view); }));
   grid.querySelectorAll(".card-media img").forEach((img) =>
     img.addEventListener("click", () => open(img.closest(".card").dataset.id)));
 
-  // The stepper only changes the local number; "Add to Cart" commits it.
-  grid.querySelectorAll("[data-qty]").forEach((q) => {
-    const input = q.querySelector("input");
-    q.querySelectorAll("button").forEach((btn) =>
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        input.value = Math.max(1, (parseInt(input.value) || 1) + parseInt(btn.dataset.step));
-      }));
-    input.addEventListener("change", () => {
-      input.value = Math.max(1, parseInt(input.value) || 1);
-    });
-    input.addEventListener("click", (e) => e.stopPropagation());
+  // Pre-fetch a saree's gallery images as soon as the shopper shows intent
+  // (hover on desktop / first touch on mobile) so the modal opens instantly.
+  grid.querySelectorAll(".card").forEach((card) => {
+    const warm = () => {
+      const p = ALL_PRODUCTS.find((x) => x.id === card.dataset.id);
+      if (p && typeof window.primeGallery === "function") window.primeGallery(p);
+    };
+    card.addEventListener("pointerenter", warm, { once: true });
+    card.addEventListener("touchstart", warm, { once: true, passive: true });
   });
 
+  // "Add to Cart" adds one more of this saree and confirms with a toast.
   grid.querySelectorAll("[data-add]").forEach((b) =>
     b.addEventListener("click", (e) => {
       e.stopPropagation();
       const p = ALL_PRODUCTS.find((x) => x.id === b.dataset.add);
-      const input = grid.querySelector(`[data-input="${p.id}"]`);
-      const qty = Math.max(1, parseInt(input.value) || 1);
-      input.value = qty;
-      commitQty(p, qty);          // set cart quantity to the chosen value
-      b.textContent = "Added ✓";
-      setTimeout(() => (b.textContent = "Add to Cart"), 1200);
+      if (!p) return;
+      window.addOneToCart(p);
+      const inCart = window.getCart().find((c) => c.id === p.id);
+      const count = inCart ? inCart.quantity : 1;
+      window.showToast(`Added to cart — quantity is now ${count} for ${p.name}.`);
     }));
-}
 
-// Set the cart quantity for a product to an absolute value.
-function commitQty(p, qty) {
-  const exists = window.getCart().some((c) => c.id === p.id);
-  if (exists) window.setQuantity(p.id, qty);
-  else if (qty > 0) window.addToCart(window.productCartShape(p), qty);
+  // "Buy Now" puts the saree in the cart and goes straight to the cart page.
+  grid.querySelectorAll("[data-buy]").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const p = ALL_PRODUCTS.find((x) => x.id === b.dataset.buy);
+      if (!p) return;
+      if (!window.getCart().some((c) => c.id === p.id)) window.addOneToCart(p);
+      window.location.href = "cart.html";
+    }));
 }
 
 // The shared gallery (js/gallery.js) calls this after its "Add to Cart"
