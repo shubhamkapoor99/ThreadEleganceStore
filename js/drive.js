@@ -250,8 +250,10 @@ async function assembleProducts(files, fetchText) {
       cover: driveImageUrl(grp.images[0].id, 600),
       coverAlt: driveImageUrlAlt(grp.images[0].id, 600),
       coverSrcset: driveImageSrcset(grp.images[0].id),
-      images: grp.images.map((im) => driveImageUrl(im.id, 1600)),
-      imagesAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 1600)),
+      // The gallery modal previews use a moderate width (1280) instead of 1600:
+      // good on high-DPI screens but markedly faster to resize/fetch & cache.
+      images: grp.images.map((im) => driveImageUrl(im.id, 1280)),
+      imagesAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 1280)),
       thumbs: grp.images.map((im) => driveImageUrl(im.id, 220)),
       thumbsAlt: grp.images.map((im) => driveImageUrlAlt(im.id, 220)),
     });
@@ -273,7 +275,7 @@ async function assembleProducts(files, fetchText) {
      • sessionStorage  -> instant when moving between pages in the same tab
      • localStorage    -> survives reloads/new tabs for a short TTL
    Add "?fresh=1" to any URL to bypass the cache and pull the latest from Drive. */
-const CATALOG_CACHE_KEY = "te_catalog_v2";   // bump when cached image URLs change
+const CATALOG_CACHE_KEY = "te_catalog_v3";   // bump when cached image URLs change
 const CATALOG_TTL_MS = 10 * 60 * 1000;   // 10 minutes
 
 // Returns { products, fresh } or null. `fresh` is false once the copy is older
