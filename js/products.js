@@ -131,11 +131,29 @@ function clearFilter(kind) {
   render();
 }
 
+// (Re)build the filters and grid from a catalog. Called for the first paint and
+// again if a background refresh brings newer sarees (stale-while-revalidate).
+function applyCatalog(products) {
+  ALL_PRODUCTS = products || [];
+  buildColorFilter();
+  buildTypeFilter();
+  buildOccasionFilter();
+  buildPriceFilter();
+  renderActiveFilters();
+  render();
+}
+
 async function init() {
   showSkeleton();
   let result;
   try {
-    result = await window.loadProductsFromDrive();
+    result = await window.loadProductsFromDrive({
+      // If the cached catalog we paint first turns out to be stale, repaint
+      // quietly once the fresh copy arrives — without blocking the first render.
+      onUpdate: (r) => {
+        if (r && Array.isArray(r.products) && r.products.length) applyCatalog(r.products);
+      },
+    });
   } catch (e) {
     console.error(e);
     grid.innerHTML = `<div class="notice">Couldn't load the catalog from Google Drive.<br>
@@ -170,12 +188,7 @@ async function init() {
     setFilterSummary("occasion-current", matchedOccasion.label);
   }
 
-  buildColorFilter();
-  buildTypeFilter();
-  buildOccasionFilter();
-  buildPriceFilter();
-  renderActiveFilters();
-  render();
+  applyCatalog(ALL_PRODUCTS);
 }
 
 // Build the Shop By Occasion filter chips from the fixed occasion list
@@ -409,14 +422,13 @@ function render() {
       <div class="card reveal ${i % 3 === 1 ? "d1" : i % 3 === 2 ? "d2" : ""}" data-id="${p.id}">
         <div class="card-inner">
           <div class="card-media">
-            <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy"
+            <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy" decoding="async"
+                 srcset="${p.coverSrcset || ''}"
+                 sizes="(max-width:560px) 46vw, (max-width:992px) 30vw, 250px"
                  data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
                  onload="this.classList.add('loaded')"
                  onerror="window.driveImgError(this)">
             <span class="shine"></span>
-            ${p.color && p.color.trim() && p.color.trim().toLowerCase() !== "assorted"
-              ? `<span class="badge-color"><span class="dot" style="background:${p.colorSwatch}"></span>${p.color}</span>`
-              : ""}
             <button class="card-view" data-view="${p.id}">View Gallery</button>
           </div>
           <div class="card-body">
@@ -431,8 +443,6 @@ function render() {
                 <input type="number" min="1" value="${qty}" data-input="${p.id}">
                 <button data-step="1">+</button>
               </div>
-            </div>
-            <div class="add-line">
               <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
             </div>
           </div>
