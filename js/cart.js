@@ -76,6 +76,12 @@ function renderItems() {
   const cart = window.getCart();
   itemsWrap.innerHTML = cart.map((it) => {
     const type = (it.type || (CATALOG.get(it.id) || {}).type || "").trim();
+    // Offer a "Qty" dropdown with the current quantity pre-selected. The list
+    // runs to at least 10, and grows to cover a larger existing quantity.
+    const maxQty = Math.max(10, it.quantity);
+    const options = Array.from({ length: maxQty }, (_, i) => i + 1)
+      .map((n) => `<option value="${n}"${n === it.quantity ? " selected" : ""}>${n}</option>`)
+      .join("");
     return `
     <div class="cart-item" data-id="${it.id}">
       <img src="${it.image}" alt="${it.name}" class="ci-open" data-open="${it.id}"
@@ -86,11 +92,10 @@ function renderItems() {
         ${type
           ? `<span class="ci-tag">${type}</span>`
           : ""}
-        <div class="qty" data-qty="${it.id}">
-          <button data-step="-1">−</button>
-          <input type="number" min="1" value="${it.quantity}" data-input="${it.id}">
-          <button data-step="1">+</button>
-        </div>
+        <label class="ci-qty">
+          <span class="ci-qty-label">Qty</span>
+          <select data-qty="${it.id}" aria-label="Quantity for ${it.name}">${options}</select>
+        </label>
       </div>
       <div class="ci-right">
         <div class="price">${window.SHOW_PRICE
@@ -164,18 +169,11 @@ function refresh() {           // update list + totals WITHOUT touching the form
 }
 
 function bindItemEvents() {
-  itemsWrap.querySelectorAll("[data-qty]").forEach((q) => {
-    const id = q.dataset.qty;
-    const input = q.querySelector("input");
-    q.querySelectorAll("button").forEach((btn) =>
-      btn.addEventListener("click", () => {
-        const v = Math.max(1, (parseInt(input.value) || 1) + parseInt(btn.dataset.step));
-        window.setQuantity(id, v);
-        refresh();
-      }));
-    input.addEventListener("change", () => {
-      const v = parseInt(input.value) || 0;
-      if (v < 1) window.removeFromCart(id); else window.setQuantity(id, v);
+  itemsWrap.querySelectorAll("select[data-qty]").forEach((sel) => {
+    const id = sel.dataset.qty;
+    sel.addEventListener("change", () => {
+      const v = Math.max(1, parseInt(sel.value) || 1);
+      window.setQuantity(id, v);
       refresh();
     });
   });
@@ -184,11 +182,19 @@ function bindItemEvents() {
     b.addEventListener("click", () => { window.removeFromCart(b.dataset.remove); refresh(); }));
 
   // Clicking a cart item's image or name opens the same gallery as Products.
-  itemsWrap.querySelectorAll("[data-open]").forEach((el) =>
+  itemsWrap.querySelectorAll("[data-open]").forEach((el) => {
     el.addEventListener("click", () => {
       const it = window.getCart().find((c) => c.id === el.dataset.open);
       if (it) openItemGallery(it);
-    }));
+    });
+    // Warm the full-size images on hover/touch so the gallery opens instantly.
+    const warm = () => {
+      const p = CATALOG.get(el.dataset.open);
+      if (p && typeof window.primeGallery === "function") window.primeGallery(p);
+    };
+    el.addEventListener("pointerenter", warm, { once: true });
+    el.addEventListener("touchstart", warm, { once: true, passive: true });
+  });
 }
 
 function checkout() {
