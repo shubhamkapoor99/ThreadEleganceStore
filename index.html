@@ -8,6 +8,11 @@
   <meta name="description" content="Timeless elegance, woven in silk. Discover handpicked traditional & contemporary sarees." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Warm up the Google Drive image hosts early so saree photos start loading sooner -->
+  <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://drive.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+  <link rel="dns-prefetch" href="https://drive.google.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/styles.css?v=20260614" />
@@ -224,7 +229,9 @@
             <div class="card reveal" data-id="${p.id}">
               <div class="card-inner">
                 <div class="card-media">
-                  <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy"
+                  <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy" decoding="async"
+                    srcset="${p.coverSrcset || ''}"
+                    sizes="(max-width:560px) 46vw, (max-width:860px) 46vw, 270px"
                     data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
                     onload="this.classList.add('loaded')"
                     onerror="window.driveImgError(this)">
@@ -241,8 +248,6 @@
                       <input type="number" min="1" value="${qty}" data-input="${p.id}">
                       <button data-step="1">+</button>
                     </div>
-                  </div>
-                  <div class="add-line">
                     <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
                   </div>
                 </div>
