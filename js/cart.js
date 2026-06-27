@@ -110,7 +110,10 @@ function renderItems() {
 function buildSummary() {
   summaryWrap.innerHTML = `
     <div class="summary">
-      <h3>Order Summary</h3>
+      <div class="summary-head">
+        <h3>Order Summary</h3>
+        <button id="clear-btn" type="button" class="clear-cart-link">Clear Cart</button>
+      </div>
       <div class="row"><span>Items</span><span id="sum-items">0</span></div>
       <div class="row"><span>Subtotal</span><span id="sum-subtotal">₹0</span></div>
       <div class="row"><span>Shipping</span><span>Calculated on WhatsApp</span></div>
@@ -138,9 +141,6 @@ function buildSummary() {
 
       <button id="checkout-btn" class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px">
         Checkout via WhatsApp
-      </button>
-      <button id="clear-btn" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px">
-        Clear Cart
       </button>
     </div>`;
 
