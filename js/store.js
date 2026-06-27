@@ -137,6 +137,36 @@ function bumpCartIcon() {
   });
 }
 
+/* ---------- lightweight toast ("snackbar") ------------------------
+   A small, auto-dismissing message used to confirm actions like
+   "added to cart". Reuses a single element so rapid clicks just
+   refresh the same toast instead of stacking. */
+let _toastTimer = null;
+function showToast(message) {
+  let el = document.getElementById("te-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "te-toast";
+    el.className = "te-toast";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    el.innerHTML = `<span class="te-toast-msg"></span>
+      <button type="button" class="te-toast-close" aria-label="Dismiss">&times;</button>`;
+    el.querySelector(".te-toast-close").addEventListener("click", () => {
+      el.classList.remove("show");
+      clearTimeout(_toastTimer);
+    });
+    document.body.appendChild(el);
+  }
+  el.querySelector(".te-toast-msg").textContent = message;
+  // Restart the entrance animation even on back-to-back calls.
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("show"), 5000);
+}
+
 /* ---------- WhatsApp order (no backend checkout) ------------------- */
 function buildWhatsAppOrder(shipping) {
   const cart = getCart();
@@ -344,6 +374,6 @@ function renderChrome(active) {
 Object.assign(window, {
   getCart, setCart, addToCart, setQuantity, removeFromCart, clearCart,
   cartCount, cartTotal, updateCartCount, buildWhatsAppOrder, renderChrome, money,
-  productCartShape, addOneToCart,
+  productCartShape, addOneToCart, showToast,
   SHOW_PRICE, PRICE_HIDDEN_TEXT, priceLabel, OCCASIONS,
 });
