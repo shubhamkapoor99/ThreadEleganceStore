@@ -36,7 +36,69 @@
     stageEl.insertBefore(track, nextArrow || null);
   }
 
+  // Inject the zoom in / out controls once. They live inside the stage so the
+  // zoom is scoped to the picture only (never the surrounding card / page).
+  let zoomCtrls = stageEl.querySelector(".mg-zoom");
+  if (!zoomCtrls) {
+    zoomCtrls = document.createElement("div");
+    zoomCtrls.className = "mg-zoom";
+    zoomCtrls.innerHTML =
+      `<button type="button" class="mg-zoom-btn mg-zoom-out" aria-label="Zoom out">\u2212</button>` +
+      `<button type="button" class="mg-zoom-btn mg-zoom-in" aria-label="Zoom in">+</button>`;
+    stageEl.appendChild(zoomCtrls);
+  }
+  const zoomInBtn = zoomCtrls.querySelector(".mg-zoom-in");
+  const zoomOutBtn = zoomCtrls.querySelector(".mg-zoom-out");
+
   let imgs = [], imgsAlt = [], idx = 0;
+
+  /* ---- picture zoom (pinch on touch, buttons + wheel on desktop) ----
+     The zoom transform is applied to the CURRENT slide only, so it scales the
+     photo in place and `overflow:hidden` on the slide clips the overflow. */
+  const ZOOM_MIN = 1, ZOOM_MAX = 4, ZOOM_STEP = 0.6;
+  let zoom = 1, panX = 0, panY = 0;
+
+  function currentSlide() { return track.children[idx] || null; }
+
+  function clampPan() {
+    const slide = currentSlide();
+    if (!slide) return;
+    const maxX = (slide.offsetWidth * (zoom - 1)) / 2;
+    const maxY = (slide.offsetHeight * (zoom - 1)) / 2;
+    panX = Math.max(-maxX, Math.min(maxX, panX));
+    panY = Math.max(-maxY, Math.min(maxY, panY));
+  }
+
+  function applyZoom() {
+    const slide = currentSlide();
+    if (!slide) return;
+    clampPan();
+    slide.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    stageEl.classList.toggle("zoomed", zoom > 1.01);
+    if (zoomInBtn) zoomInBtn.disabled = zoom >= ZOOM_MAX - 0.001;
+    if (zoomOutBtn) zoomOutBtn.disabled = zoom <= ZOOM_MIN + 0.001;
+  }
+
+  function resetZoom() {
+    zoom = 1; panX = 0; panY = 0;
+    track.querySelectorAll(".mg-slide").forEach((s) => { s.style.transform = ""; });
+    stageEl.classList.remove("zoomed", "grabbing");
+    if (zoomInBtn) zoomInBtn.disabled = false;
+    if (zoomOutBtn) zoomOutBtn.disabled = true;
+  }
+
+  // Set an absolute zoom level, keeping the current view roughly centred by
+  // scaling the existing pan offset along with it.
+  function setZoom(z) {
+    const prev = zoom;
+    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    if (prev > 0) { panX *= zoom / prev; panY *= zoom / prev; }
+    if (zoom <= 1.01) { panX = 0; panY = 0; }
+    applyZoom();
+  }
+
+  if (zoomInBtn) zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); setZoom(zoom + ZOOM_STEP); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); setZoom(zoom - ZOOM_STEP); });
 
   // Assign a slide's high-res src the first time it's needed, then cache it.
   function loadSlide(k) {
@@ -73,14 +135,15 @@
     track.style.transform = "translateX(0)";
     track.innerHTML = imgs.map((src, i) => `
       <div class="mg-slide" data-si="${i}">
-        ${previews[i] ? `<img class="mg-base" src="${previews[i]}" alt="" aria-hidden="true" onerror="this.remove()">` : ""}
-        <img class="mg-hi" alt="${(p.name || 'Saree') + ' — image ' + (i + 1)}"
+        ${previews[i] ? `<img class="mg-base" src="${previews[i]}" alt="" aria-hidden="true" draggable="false" onerror="this.remove()">` : ""}
+        <img class="mg-hi" alt="${(p.name || 'Saree') + ' — image ' + (i + 1)}" draggable="false"
              data-full="${src}" data-alt="${imgsAlt[i] || ''}">
       </div>`).join("");
 
     // Re-enable the slide animation on the next frame.
     requestAnimationFrame(() => { track.style.transition = ""; });
 
+    resetZoom();
     ensureLoaded(0);
     preloadAll();
     syncThumbs();
@@ -110,6 +173,7 @@
 
   function showSlide(i) {
     if (!imgs.length) return;
+    resetZoom();                      // a fresh slide always starts un-zoomed
     idx = (i + imgs.length) % imgs.length;
     track.style.transform = `translateX(${-idx * 100}%)`;
     ensureLoaded(idx);
@@ -192,6 +256,7 @@
 
   function closeGallery() {
     modal.classList.remove("open");
+    resetZoom();
     unlockScroll();
   }
 
@@ -206,15 +271,105 @@
     if (e.key === "ArrowRight") showSlide(idx + 1);
   });
 
-  /* swipe on touch */
-  let touchX = null;
-  stageEl.addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
+  /* ---- touch: pinch-to-zoom, drag-to-pan (when zoomed), swipe (when not) ---- */
+  const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  let touchStartX = null, touchStartY = null;
+  let pinchStartDist = 0, pinchStartZoom = 1;
+  let panLastX = 0, panLastY = 0;
+  let isPinching = false, isPanning = false;
+
+  stageEl.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      isPinching = true; isPanning = false;
+      pinchStartDist = touchDist(e.touches[0], e.touches[1]);
+      pinchStartZoom = zoom;
+      stageEl.classList.add("grabbing");
+    } else if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      if (zoom > 1.01) {
+        isPanning = true;
+        panLastX = e.touches[0].clientX;
+        panLastY = e.touches[0].clientY;
+        stageEl.classList.add("grabbing");
+      }
+    }
+  }, { passive: true });
+
+  stageEl.addEventListener("touchmove", (e) => {
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      if (pinchStartDist > 0) setZoom(pinchStartZoom * (touchDist(e.touches[0], e.touches[1]) / pinchStartDist));
+    } else if (isPanning && e.touches.length === 1 && zoom > 1.01) {
+      e.preventDefault();
+      panX += e.touches[0].clientX - panLastX;
+      panY += e.touches[0].clientY - panLastY;
+      panLastX = e.touches[0].clientX;
+      panLastY = e.touches[0].clientY;
+      applyZoom();
+    }
+  }, { passive: false });
+
   stageEl.addEventListener("touchend", (e) => {
-    if (touchX === null) return;
-    const dx = e.changedTouches[0].clientX - touchX;
-    if (Math.abs(dx) > 40) showSlide(idx + (dx < 0 ? 1 : -1));
-    touchX = null;
+    if (isPinching) {
+      if (e.touches.length < 2) { isPinching = false; stageEl.classList.remove("grabbing"); }
+      if (zoom <= 1.01) resetZoom();
+      touchStartX = null;
+      return;
+    }
+    if (isPanning) {
+      if (e.touches.length === 0) { isPanning = false; stageEl.classList.remove("grabbing"); }
+      touchStartX = null;
+      return;
+    }
+    // No zoom in play → treat a horizontal flick as a slide change.
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - (touchStartY || 0);
+    if (zoom <= 1.01 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      showSlide(idx + (dx < 0 ? 1 : -1));
+    }
+    touchStartX = null;
+  }, { passive: true });
+
+  /* ---- desktop: scroll wheel to zoom, drag to pan, double-click to toggle ---- */
+  stageEl.addEventListener("wheel", (e) => {
+    if (!modal.classList.contains("open")) return;
+    if (e.target.closest(".mg-zoom")) return;
+    e.preventDefault();
+    setZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP / 2 : -ZOOM_STEP / 2));
+  }, { passive: false });
+
+  stageEl.addEventListener("dblclick", (e) => {
+    if (e.target.closest(".mg-arrow, .mg-zoom")) return;
+    setZoom(zoom > 1.01 ? 1 : 2.2);
   });
+
+  // Belt-and-braces: cancel any native drag that still tries to start on the
+  // image so it can't interrupt the pan gesture.
+  stageEl.addEventListener("dragstart", (e) => e.preventDefault());
+
+  let mouseDragging = false, mouseLastX = 0, mouseLastY = 0;
+  stageEl.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "touch" || zoom <= 1.01) return;
+    if (e.target.closest(".mg-arrow, .mg-zoom")) return;
+    e.preventDefault();                       // block native image drag / text selection
+    mouseDragging = true; mouseLastX = e.clientX; mouseLastY = e.clientY;
+    stageEl.classList.add("grabbing");
+    try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  stageEl.addEventListener("pointermove", (e) => {
+    if (!mouseDragging) return;
+    e.preventDefault();
+    panX += e.clientX - mouseLastX;
+    panY += e.clientY - mouseLastY;
+    mouseLastX = e.clientX; mouseLastY = e.clientY;
+    applyZoom();
+  });
+  const endMouseDrag = () => { mouseDragging = false; stageEl.classList.remove("grabbing"); };
+  stageEl.addEventListener("pointerup", endMouseDrag);
+  stageEl.addEventListener("pointercancel", endMouseDrag);
+  stageEl.addEventListener("pointerleave", endMouseDrag);
 
   window.openGallery = openGallery;
   window.closeGallery = closeGallery;
