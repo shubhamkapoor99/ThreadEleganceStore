@@ -25,7 +25,10 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; overflow-x: clip; }
+/* overscroll-behavior: none stops the mobile rubber-band/bounce that would
+   otherwise drag the fixed navbar (and other fixed elements) up/down on a
+   hard scroll past the top or bottom of the page. */
+html { scroll-behavior: smooth; overflow-x: clip; overscroll-behavior: none; }
 body {
   font-family: var(--font-sans);
   color: var(--ink);
@@ -33,6 +36,7 @@ body {
   line-height: 1.6;
   max-width: 100%;
   overflow-x: clip;
+  overscroll-behavior: none;
   overflow-wrap: break-word;   /* long tokens (emails, URLs) never overflow */
   word-break: break-word;
 }
@@ -445,7 +449,7 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 @media (hover: hover) { .chip:hover { transform: translateY(-2px); border-color: var(--gold); } }
 .chip.active { background: var(--wine); color: #fff; border-color: var(--wine); }
 .filters select { padding: 9px 14px; border-radius: 10px; border: 1.5px solid #e6dccd; background: #fff;
-  font-family: var(--font-sans); color: var(--ink); }
+  font-family: var(--font-sans); color: var(--ink); font-size: 16px; }
 
 /* ---------- products layout: sarees (left) + filter box (right) ---------- */
 .products-layout { display: flex; flex-direction: column; gap: 0; }
@@ -535,7 +539,20 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 .price small { color: var(--muted); font-weight: 500; font-size: .76rem; }
 .card-foot .price { flex: 1 1 100%; }
 .card-foot .qty { flex: 0 0 auto; }
-.card-foot .btn { flex: 1 1 auto; justify-content: center; padding: 11px 14px; font-size: .86rem; }
+/* Compact, modern product-card actions: smaller text, sleek rounded-rect
+   buttons with a refined shadow and crisp hover/press feedback.
+   flex: 1 1 auto + nowrap keeps each label on one line and lets the pair wrap
+   to two rows on a narrow card instead of breaking the text mid-word. */
+.card-foot .btn { flex: 1 1 auto; justify-content: center; gap: 6px; white-space: nowrap;
+  padding: 8px 12px; font-size: .76rem; font-weight: 600; letter-spacing: .2px;
+  border-radius: 11px; line-height: 1.1; }
+.card-foot .btn-primary { box-shadow: 0 5px 14px rgba(91,14,45,.2); }
+.card-foot .btn-outline { border-width: 1.4px; }
+@media (hover: hover) {
+  .card-foot .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(91,14,45,.28); }
+  .card-foot .btn-outline:hover { transform: translateY(-2px); }
+}
+.card-foot .btn:active { transform: translateY(0) scale(.98); }
 
 /* ---------- bigger featured cards on desktop ---------- */
 /* The home "Featured Sarees" grid stretches its 4 cards across the full
@@ -556,6 +573,45 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
    561–860px range to a clean 2×2 (avoids a lonely 3+1 row). */
 @media (min-width: 561px) and (max-width: 860px) {
   .product-grid--featured { grid-template-columns: repeat(2, 1fr); gap: clamp(16px, 2.4vw, 26px); }
+}
+
+/* ---------- featured sarees: auto-running "train" carousel ----------
+   A horizontal row of cards slides left one card at a time every few seconds
+   and loops seamlessly (a duplicate set is appended in JS). The viewport is
+   feathered at both edges with a soft mask so cards glide in/out elegantly. */
+.featured-slider { position: relative; }
+.featured-viewport { overflow: hidden; padding: 10px 2px 6px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 2.5%, #000 97.5%, transparent 100%); }
+.featured-slider.is-static .featured-viewport { -webkit-mask-image: none; mask-image: none; }
+.featured-track { display: flex; gap: clamp(16px, 2vw, 28px); will-change: transform; }
+.featured-track .card, .featured-track .skeleton { flex: 0 0 var(--fc-card, 260px); }
+/* Too few sarees to scroll → just centre them, no looping. */
+.featured-slider.is-static .featured-track { justify-content: center; flex-wrap: wrap; }
+@media (min-width: 861px) {
+  .featured-track .card-body h3 { font-size: 1.12rem; }
+  .featured-track .price { font-size: 1.1rem; }
+}
+
+/* glassy circular nav arrows, shown only when the carousel is actually running */
+.fc-arrow { display: none; position: absolute; top: 50%; transform: translateY(-50%); z-index: 6;
+  width: 48px; height: 48px; border-radius: 50%; border: 1px solid #ead9bf;
+  background: rgba(255,255,255,.92); color: var(--wine); cursor: pointer;
+  box-shadow: var(--shadow-md); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: background .25s var(--ease), transform .25s var(--ease), color .25s var(--ease);
+  -webkit-tap-highlight-color: transparent; }
+.featured-slider.is-carousel .fc-arrow { display: grid; place-items: center; }
+.fc-arrow.prev { left: -12px; }
+.fc-arrow.next { right: -12px; }
+@media (hover: hover) {
+  .fc-arrow:hover { background: var(--wine); color: #fff; transform: translateY(-50%) scale(1.07); }
+}
+.fc-arrow:active { transform: translateY(-50%) scale(.95); }
+@media (max-width: 700px) {
+  .featured-slider.is-carousel .fc-arrow { display: none; }   /* phones: swipe + autoplay */
+}
+@media (prefers-reduced-motion: reduce) {
+  .featured-track { transition: none !important; }
 }
 
 /* ---------- responsive YouTube video ---------- */
@@ -602,12 +658,41 @@ html:has(body.modal-open) { overflow: hidden; }
   box-shadow: var(--shadow-lg); animation: pop .45s var(--ease); }
 @keyframes pop { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:none} }
 .modal-gallery { background: #1c0813; position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.mg-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+/* touch-action: pan-y lets the modal still scroll vertically on phones while
+   stopping the browser from pinch-zooming the whole page when the shopper
+   pinches the photo — our own handler zooms just the picture instead. When a
+   slide is zoomed in we switch to touch-action: none so dragging pans the
+   picture rather than scrolling the modal. */
+.mg-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: pan-y; }
+.mg-stage.zoomed { touch-action: none; cursor: grab; }
+.mg-stage.zoomed.grabbing { cursor: grabbing; }
 /* Horizontal slider: all slides sit side by side and the track translates. */
 .mg-track { display: flex; height: 100%; min-height: inherit; width: 100%;
   transition: transform .42s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
-.mg-slide { position: relative; flex: 0 0 100%; width: 100%; display: grid; place-items: center; overflow: hidden; }
-.mg-slide img { grid-area: 1 / 1; width: 100%; height: 100%; object-fit: contain; max-height: 70vh; }
+.mg-slide { position: relative; flex: 0 0 100%; width: 100%; display: grid; place-items: center; overflow: hidden;
+  transform-origin: center center; transition: transform .2s var(--ease); will-change: transform; }
+/* While actively pinching / dragging, drop the transform easing so the picture
+   tracks the finger 1:1 with no lag. */
+.mg-stage.grabbing .mg-slide { transition: none; }
+.mg-slide img { grid-area: 1 / 1; width: 100%; height: 100%; object-fit: contain; max-height: 70vh;
+  /* stop the browser's native image drag (ghost image) from hijacking the
+     click-and-drag pan when the photo is zoomed in */
+  -webkit-user-drag: none; -khtml-user-drag: none; user-select: none; -webkit-user-select: none; }
+
+/* zoom in / out controls pinned to the stage (work on mouse + touch) */
+.mg-zoom { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; gap: 8px; }
+.mg-zoom-btn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(43,32,36,.72); color: #fff; font-size: 1.35rem; line-height: 1; font-weight: 600;
+  display: grid; place-items: center; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-sm); transition: background .2s, transform .15s var(--ease);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.mg-zoom-btn:disabled { opacity: .4; cursor: default; }
+.mg-zoom-btn:active { transform: scale(.92); }
+@media (hover: hover) { .mg-zoom-btn:not(:disabled):hover { background: var(--gold); color: #2a1a05; } }
+@media (max-width: 560px) {
+  .mg-zoom { right: 10px; bottom: 10px; gap: 7px; }
+  .mg-zoom-btn { width: 36px; height: 36px; font-size: 1.2rem; }
+}
 /* The low-res preview shows instantly (sharp, no blur); the hi-res fades in
    on top of it the moment it has finished loading. */
 .mg-slide .mg-base { z-index: 1; }
@@ -710,7 +795,7 @@ html:has(body.modal-open) { overflow: hidden; }
 .ci-qty { display: inline-flex; align-items: center; gap: 8px; }
 .ci-qty-label { font-size: .8rem; font-weight: 600; color: var(--muted); }
 .ci-qty select { padding: 6px 28px 6px 12px; border: 1.5px solid #e6dccd; border-radius: 999px;
-  font-family: var(--font-sans); font-size: .9rem; color: var(--wine); background-color: #fff; cursor: pointer;
+  font-family: var(--font-sans); font-size: 16px; color: var(--wine); background-color: #fff; cursor: pointer;
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b0e2d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 9px center; background-size: 14px; }
@@ -752,7 +837,10 @@ html:has(body.modal-open) { overflow: hidden; }
 .field.full { grid-column: 1 / -1; }
 .field label { font-size: .82rem; font-weight: 600; color: var(--wine); }
 .field input, .field select { padding: 11px 13px; border: 1.5px solid #e6dccd; border-radius: 10px;
-  font-family: var(--font-sans); background:#fff; width: 100%; max-width: 100%; min-width: 0; }
+  font-family: var(--font-sans); background:#fff; width: 100%; max-width: 100%; min-width: 0;
+  /* 16px keeps mobile Safari/Chrome from auto-zooming the page when a field
+     gains focus (browsers zoom in on inputs whose text is < 16px). */
+  font-size: 16px; }
 .field select { text-overflow: ellipsis; }
 .field input:focus, .field select:focus { outline: none; border-color: var(--gold); }
 .empty-cart { text-align: center; padding: 60px 20px; }
@@ -898,7 +986,7 @@ body.home.wa-shown .wa-float { opacity: 1; visibility: visible; pointer-events: 
   .card-foot .price { flex: 1 1 auto; }
   .qty button { width: 28px; height: 30px; font-size: .95rem; }
   .qty input { width: 30px; height: 30px; }
-  .card-foot .btn { flex: 1 1 100%; width: 100%; padding: 10px 14px; justify-content: center; }
+  .card-foot .btn { flex: 1 1 100%; width: 100%; padding: 8px 12px; font-size: .74rem; border-radius: 10px; justify-content: center; }
   .badge-color { top: 8px; left: 8px; padding: 4px 8px; font-size: .66rem; }
   .card-view { right: 8px; bottom: 8px; padding: 6px 10px; font-size: .72rem; opacity: 1; transform: none; }
   /* Cart row: image + details on top, price/remove on their own line below
