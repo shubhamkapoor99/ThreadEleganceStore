@@ -212,6 +212,15 @@
       const viewport = slider.querySelector(".featured-viewport");
       const grid = document.getElementById("featured-grid");      // the sliding track
 
+      // Mobile: hold a finger on the strip to freeze it, lift to let it glide on
+      // again from the exact same point (CSS animation-play-state resumes where
+      // it paused). Toggling .is-touched drives the pause via CSS.
+      const pauseFlow = () => slider.classList.add("is-touched");
+      const resumeFlow = () => slider.classList.remove("is-touched");
+      slider.addEventListener("touchstart", pauseFlow, { passive: true });
+      slider.addEventListener("touchend", resumeFlow, { passive: true });
+      slider.addEventListener("touchcancel", resumeFlow, { passive: true });
+
       grid.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line"></div><div class="sk-line short"></div></div></div>`.repeat(4);
 
       try {
