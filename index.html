@@ -15,7 +15,7 @@
   <link rel="dns-prefetch" href="https://drive.google.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
-  <link rel="stylesheet" href="css/styles.css?v=20260631" />
+  <link rel="stylesheet" href="css/styles.css?v=20260718" />
 </head>
 <body class="home">
   <div class="loader"><div class="ring"></div></div>
@@ -41,15 +41,9 @@
         <p>A glimpse of what's waiting in the collection.</p>
       </div>
       <div class="featured-slider" id="featuredSlider">
-        <button class="fc-arrow prev" type="button" aria-label="Previous sarees">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
         <div class="featured-viewport">
           <div id="featured-grid" class="featured-track"></div>
         </div>
-        <button class="fc-arrow next" type="button" aria-label="Next sarees">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-        </button>
       </div>
       <div class="center" style="margin-top:46px">
         <div class="home-shop-actions">
@@ -139,9 +133,11 @@
       </div>
       <div class="modal-info">
         <h2 data-mtitle>Saree</h2>
-        <p class="m-type" data-mtype></p>
+        <div class="m-meta">
+          <p class="m-type" data-mtype></p>
+          <div class="m-price gold-text" data-mprice></div>
+        </div>
         <p class="m-details" data-mdetails></p>
-        <div class="m-price gold-text" data-mprice></div>
         <div class="m-buy">
           <button class="btn btn-outline" data-mbuy style="justify-content:center">Buy Now</button>
           <button class="btn btn-primary" data-madd style="justify-content:center">Add to Cart</button>
@@ -207,14 +203,14 @@
     })();
   </script>
 
-  <!-- featured products: auto-running "train" carousel (every 5s, unlimited cards) -->
+  <!-- featured sarees: a single row of small cards that flows steadily to the
+       RIGHT (Card1 -> Card2 -> Card3 …). The set is duplicated so the pure-CSS
+       marquee loops seamlessly; hovering pauses it. -->
   <script>
     (async function () {
       const slider = document.getElementById("featuredSlider");
       const viewport = slider.querySelector(".featured-viewport");
       const grid = document.getElementById("featured-grid");      // the sliding track
-      const prevBtn = slider.querySelector(".fc-arrow.prev");
-      const nextBtn = slider.querySelector(".fc-arrow.next");
 
       grid.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line"></div><div class="sk-line short"></div></div></div>`.repeat(4);
 
@@ -222,15 +218,13 @@
         const { products } = await window.loadProductsFromDrive();
         // Featured sarees use the image naming F1_1.png, F2_1.png … Pick those
         // F-groups (ordered by their number); fall back to the whole catalog.
-        // No cap — every featured saree rides the carousel.
         const featured = products
           .filter((p) => /^F\d+$/i.test(p.group))
           .sort((a, b) => parseInt(a.group.slice(1), 10) - parseInt(b.group.slice(1), 10));
         const list = featured.length ? featured : products;
 
         if (!list.length) {
-          slider.classList.remove("is-carousel");
-          grid.style.display = "block";
+          slider.classList.remove("is-static");
           grid.innerHTML = `<div class="notice">Your sarees will appear here once your Google Drive is connected.<br>
             <small>Add your API key in <b>js/config.js</b> — see README.</small></div>`;
           return;
@@ -242,7 +236,7 @@
               <div class="card-media">
                 <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy" decoding="async"
                   srcset="${p.coverSrcset || ''}"
-                  sizes="(max-width:560px) 86vw, (max-width:860px) 46vw, 270px"
+                  sizes="(max-width:560px) 62vw, 300px"
                   data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
                   onload="this.classList.add('loaded')"
                   onerror="window.driveImgError(this)">
@@ -258,22 +252,19 @@
                   <button class="btn btn-primary" data-add="${p.id}">Add to Cart</button>
                 </div>
               </div>
-            </div>`;
+            </div>
+          </div>`;
 
-        const TRANSITION = 850;   // slide animation length (ms)
-        const DELAY = 5000;       // advance one card every 5 seconds
-        const N = list.length;
-        let step = 0, index = 0, timer = null, animating = false, scrollable = false;
-
-        const visibleCount = () => {
-          const w = window.innerWidth;
-          if (w <= 560) return 1;
-          if (w <= 860) return 2;
-          if (w <= 1100) return 3;
-          return 4;
-        };
-
+        const SPEED = 60;          // marquee speed in px per second
         const openFor = (id) => { const p = list.find((x) => x.id === id); if (p) window.openGallery(p); };
+
+        // Small, responsive card width so several sarees ride the row at once.
+        const cardWidth = () => {
+          const vw = viewport.clientWidth || window.innerWidth;
+          if (vw <= 560) return Math.max(168, Math.round(vw * 0.5));
+          if (vw <= 900) return 195;
+          return 215;
+        };
 
         function bind() {
           grid.querySelectorAll("[data-view]").forEach((b) =>
@@ -281,10 +272,7 @@
           grid.querySelectorAll(".card-media img").forEach((img) =>
             img.addEventListener("click", () => openFor(img.closest(".card").dataset.id)));
           grid.querySelectorAll(".card").forEach((card) => {
-            const warm = () => {
-              const p = list.find((x) => x.id === card.dataset.id);
-              if (p && typeof window.primeGallery === "function") window.primeGallery(p);
-            };
+            const warm = () => { const p = list.find((x) => x.id === card.dataset.id); if (p && typeof window.primeGallery === "function") window.primeGallery(p); };
             card.addEventListener("pointerenter", warm, { once: true });
             card.addEventListener("touchstart", warm, { once: true, passive: true });
           });
@@ -307,98 +295,50 @@
             }));
         }
 
-        function layout() {
-          const gap = parseFloat(getComputedStyle(grid).gap) || 24;
-          const vis = visibleCount();
-          const cardW = (viewport.clientWidth - gap * (vis - 1)) / vis;
-          grid.style.setProperty("--fc-card", cardW + "px");
-          step = cardW + gap;
-        }
+        // Render one copy to measure its exact stride, then repeat the set enough
+        // times to fill (viewport + one copy). The track starts shifted left by one
+        // copy (--fs-shift) and the CSS animates it back to 0 → rightward flow.
+        function build() {
+          const cw = cardWidth();
+          grid.style.setProperty("--fs-card", cw + "px");
+          grid.style.animation = "none";                 // freeze while measuring
+          grid.innerHTML = list.map(cardHTML).join("");
 
-        function setPos(i, animate) {
-          grid.style.transition = animate ? `transform ${TRANSITION}ms cubic-bezier(.45,.05,.2,1)` : "none";
-          grid.style.transform = `translateX(${-(i * step)}px)`;
-        }
+          const gap = parseFloat(getComputedStyle(grid).gap) || 22;
+          // stride of ONE copy = sum of (card width + gap) for every card in it
+          const stride = list.reduce((sum, _, i) => sum + (grid.children[i]
+            ? grid.children[i].getBoundingClientRect().width : cw) + gap, 0) || list.length * (cw + gap);
 
-        function next() {
-          if (animating || !scrollable) return;
-          animating = true; index++; setPos(index, true);
-        }
-        function prev() {
-          if (animating || !scrollable) return;
-          if (index <= 0) {
-            // hop to the cloned copy of the start (no animation), then glide back one
-            index = N; setPos(index, false); void grid.offsetWidth;
-            requestAnimationFrame(() => { animating = true; index = N - 1; setPos(index, true); });
-          } else {
-            animating = true; index--; setPos(index, true);
+          const vw = viewport.clientWidth || window.innerWidth;
+
+          // Not enough cards to fill the row → centre them, no motion.
+          if (list.length < 3 || stride <= vw * 0.9) {
+            slider.classList.add("is-static");
+            grid.style.removeProperty("--fs-shift");
+            grid.style.removeProperty("--fs-dur");
+            grid.style.animation = "";
+            bind();
+            return;
           }
-        }
 
-        grid.addEventListener("transitionend", (e) => {
-          // Only the track's own slide counts — ignore card hover/tilt transforms
-          // (which also bubble up to this element).
-          if (e.target !== grid || e.propertyName !== "transform") return;
-          animating = false;
-          if (index >= N) { index = 0; setPos(0, false); }        // seamless wrap to the start
-          else if (index < 0) { index = N - 1; setPos(index, false); }
-        });
-
-        function stop() { if (timer) { clearInterval(timer); timer = null; } }
-        function start() { stop(); if (scrollable && !document.hidden) timer = setInterval(next, DELAY); }
-        function bump() { stop(); start(); }   // restart the countdown after a manual move
-
-        function buildTrack() {
-          const vis = visibleCount();
-          scrollable = N > vis;
-          grid.style.display = "";
-          // Append a full duplicate so advancing past the last card flows
-          // straight into a copy of the first — an endless "train".
-          grid.innerHTML = scrollable ? list.map(cardHTML).join("") + list.map(cardHTML).join("")
-                                       : list.map(cardHTML).join("");
-          slider.classList.toggle("is-carousel", scrollable);
-          slider.classList.toggle("is-static", !scrollable);
+          slider.classList.remove("is-static");
+          const copies = Math.max(3, Math.ceil(vw / stride) + 2);
+          grid.innerHTML = Array.from({ length: copies }, () => list.map(cardHTML).join("")).join("");
+          grid.style.setProperty("--fs-shift", stride + "px");
+          grid.style.setProperty("--fs-dur", Math.max(12, Math.round(stride / SPEED)) + "s");
+          grid.style.animation = "";                     // hand control back to CSS keyframes
           bind();
-          window.initTilt(grid);
-          layout();
-          index = 0; setPos(0, false);
-          start();
         }
-
-        // Pause while the visitor is hovering / interacting; resume on leave.
-        slider.addEventListener("pointerenter", stop);
-        slider.addEventListener("pointerleave", start);
-        prevBtn.addEventListener("click", () => { prev(); bump(); });
-        nextBtn.addEventListener("click", () => { next(); bump(); });
-
-        // Touch swipe (phones, where the arrows are hidden).
-        let sx = null;
-        viewport.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; stop(); }, { passive: true });
-        viewport.addEventListener("touchend", (e) => {
-          if (sx !== null) {
-            const dx = e.changedTouches[0].clientX - sx;
-            if (Math.abs(dx) > 40) (dx < 0 ? next() : prev());
-            sx = null;
-          }
-          start();
-        }, { passive: true });
-
-        document.addEventListener("visibilitychange", () => { document.hidden ? stop() : start(); });
 
         let resizeT = null;
         window.addEventListener("resize", () => {
           clearTimeout(resizeT);
-          resizeT = setTimeout(() => {
-            const wasScrollable = scrollable;
-            if ((N > visibleCount()) !== wasScrollable) { buildTrack(); }   // crossed a breakpoint
-            else { layout(); index = Math.min(index, N); setPos(index, false); }
-          }, 150);
+          resizeT = setTimeout(build, 200);
         });
 
-        buildTrack();
+        build();
       } catch (e) {
-        slider.classList.remove("is-carousel");
-        grid.style.display = "block";
+        slider.classList.remove("is-static");
         grid.innerHTML = `<div class="notice">Configure Google Drive in <b>js/config.js</b> to show your sarees here.</div>`;
       }
     })();
