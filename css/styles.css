@@ -611,7 +611,11 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   transform: none;
   opacity: 1;
 }
-.featured-slider:hover .featured-track { animation-play-state: paused; }
+/* Desktop hover pauses; on touch devices the JS toggles .is-touched while a
+   finger is down. Both use animation-play-state so the strip freezes in place
+   and resumes gliding from the EXACT same point (no jump/reset). */
+.featured-slider:hover .featured-track,
+.featured-slider.is-touched .featured-track { animation-play-state: paused; }
 
 /* Too few sarees to fill a row → just centre them, no motion. */
 .featured-slider.is-static { -webkit-mask-image: none; mask-image: none; }
@@ -668,8 +672,11 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   overscroll-behavior: none; }
 .modal.open { display: block; }
 /* Freeze the page behind the modal so a hard/rubber-band scroll can't drag the
-   site into view underneath the card. */
-body.modal-open { overflow: hidden; }
+   site into view underneath the card. We pin the body with position:fixed (JS
+   sets `top: -<scrollY>px`) rather than plain overflow:hidden, because that's
+   the only lock mobile browsers honour without losing the scroll position — so
+   closing the gallery returns the shopper to the exact same spot. */
+body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 html:has(body.modal-open) { overflow: hidden; }
 .modal-bg { position: absolute; inset: 0; background: rgba(20,6,14,.86); backdrop-filter: blur(8px); }
 .modal-card { position: relative; z-index: 2; max-width: 1040px; height: 90vh; max-height: 90vh; margin: 5vh auto; background: var(--ivory);
