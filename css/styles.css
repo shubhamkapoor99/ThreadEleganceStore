@@ -114,6 +114,11 @@ section { position: relative; }
 /* ---- Home page navbar: brand lives in the hero image, so hide it; the bar is
    solid with dark links (the photo sits below the bar, not behind it). ---- */
 body.home .brand { display: none; }
+/* Once the visitor scrolls past the hero (where the logo is baked into the
+   image), reveal the "ThreadElegance Store" wordmark in the bar like the other
+   pages — on mobile and desktop alike. */
+body.home .navbar.scrolled .brand { display: flex; }
+body.home .navbar.scrolled .nav-inner { justify-content: space-between; }
 body.home .navbar { background: rgba(251,247,241,.92); backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow-sm); }
 /* Home: light frosted-glass transparent bar over the hero photo (all screens),
@@ -481,7 +486,7 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 }
 
 /* ---------- product grid + 3D cards ---------- */
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px),1fr)); gap: clamp(12px, 1.6vw, 22px); }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px),1fr)); gap: clamp(12px, 1.5vw, 20px); }
 .card { perspective: 1100px; }
 .card-inner {
   position: relative; background: #fff; border-radius: var(--radius); overflow: hidden;
@@ -521,7 +526,7 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 /* Touch devices have no hover, so always show the "View Gallery" button and let
    a single tap on the image / button open the saree straight away. */
 @media (hover: none) { .card-view { transform: none; opacity: 1; } }
-.card-body { padding: 13px 15px 13px; transform: translateZ(40px); }
+.card-body { padding: 13px 11px; transform: translateZ(40px); }
 .card-body h3 { font-size: 1.02rem; color: var(--wine); font-family: var(--font-serif); margin-bottom: 4px;
   line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden; }
@@ -533,19 +538,23 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
 /* On wider (web) screens the price gets its own line and the quantity stepper
    sits right next to the "Add to Cart" button. On phones the price + stepper
    share the top line and the button drops to a full-width line below. */
-.card-foot { display: flex; flex-wrap: wrap; align-items: center;
-  gap: 10px; margin-top: 12px; }
+/* Grid footer: the price spans the full width on its own row, then "Buy Now" and
+   "Add to Cart" always sit side by side as two equal columns (same width AND
+   height) — never stacking — even on the smaller cards. */
+.card-foot { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+  gap: 6px; margin-top: 12px; }
 .price { font-size: 1.02rem; font-weight: 700; color: var(--ink); min-width: 0; line-height: 1.25; }
 .price small { color: var(--muted); font-weight: 500; font-size: .76rem; }
-.card-foot .price { flex: 1 1 100%; }
-.card-foot .qty { flex: 0 0 auto; }
+.card-foot .price { grid-column: 1 / -1; }
+.card-foot .qty { grid-column: 1 / -1; }
 /* Compact, modern product-card actions: smaller text, sleek rounded-rect
    buttons with a refined shadow and crisp hover/press feedback.
-   flex: 1 1 auto + nowrap keeps each label on one line and lets the pair wrap
-   to two rows on a narrow card instead of breaking the text mid-word. */
-.card-foot .btn { flex: 1 1 auto; justify-content: center; gap: 6px; white-space: nowrap;
-  padding: 8px 12px; font-size: .76rem; font-weight: 600; letter-spacing: .2px;
-  border-radius: 11px; line-height: 1.1; }
+   flex: 1 1 0 + min-width:0 keeps "Buy Now" and "Add to Cart" side by side on a
+   single row, shrinking to fit even on the smaller cards instead of stacking. */
+.card-foot .btn { width: 100%; min-width: 0; justify-content: center; gap: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 9px 6px; font-size: .62rem; font-weight: 500; letter-spacing: .2px;
+  border-radius: 10px; line-height: 1.15; }
 .card-foot .btn-primary { box-shadow: 0 5px 14px rgba(91,14,45,.2); }
 .card-foot .btn-outline { border-width: 1.4px; }
 @media (hover: hover) {
@@ -575,43 +584,53 @@ body.home .navbar:not(.scrolled) .nav-toggle span { background: var(--wine); }
   .product-grid--featured { grid-template-columns: repeat(2, 1fr); gap: clamp(16px, 2.4vw, 26px); }
 }
 
-/* ---------- featured sarees: auto-running "train" carousel ----------
-   A horizontal row of cards slides left one card at a time every few seconds
-   and loops seamlessly (a duplicate set is appended in JS). The viewport is
-   feathered at both edges with a soft mask so cards glide in/out elegantly. */
-.featured-slider { position: relative; }
-.featured-viewport { overflow: hidden; padding: 10px 2px 6px;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
-          mask-image: linear-gradient(90deg, transparent 0, #000 2.5%, #000 97.5%, transparent 100%); }
-.featured-slider.is-static .featured-viewport { -webkit-mask-image: none; mask-image: none; }
-.featured-track { display: flex; gap: clamp(16px, 2vw, 28px); will-change: transform; }
-.featured-track .card, .featured-track .skeleton { flex: 0 0 var(--fc-card, 260px); }
-/* Too few sarees to scroll → just centre them, no looping. */
-.featured-slider.is-static .featured-track { justify-content: center; flex-wrap: wrap; }
-@media (min-width: 861px) {
-  .featured-track .card-body h3 { font-size: 1.12rem; }
-  .featured-track .price { font-size: 1.1rem; }
+/* ---------- featured sarees: leftward "train" marquee ----------
+   Cards sit in ONE horizontal row (flex, never wrapping) and the whole strip
+   glides steadily to the LEFT forever. The card set is duplicated in JS; the
+   track animates from 0 to exactly one copy width (--fs-shift), so it loops
+   with no gap or jump. Edges are feathered; hover pauses. */
+.featured-slider { position: relative; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%); }
+.featured-viewport { overflow: visible; padding: 12px 0; }
+
+.featured-track {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch;
+  gap: clamp(16px, 2vw, 26px);
+  width: max-content;
+  will-change: transform;
+  animation: featuredFlow var(--fs-dur, 32s) linear infinite;
+}
+.featured-track .card,
+.featured-track .skeleton {
+  flex: 0 0 var(--fs-card, 220px);
+  width: var(--fs-card, 220px);
+  position: static;
+  transform: none;
+  opacity: 1;
+}
+.featured-slider:hover .featured-track { animation-play-state: paused; }
+
+/* Too few sarees to fill a row → just centre them, no motion. */
+.featured-slider.is-static { -webkit-mask-image: none; mask-image: none; }
+.featured-slider.is-static .featured-track {
+  animation: none; width: 100%; flex-wrap: wrap !important;
+  justify-content: center;
 }
 
-/* glassy circular nav arrows, shown only when the carousel is actually running */
-.fc-arrow { display: none; position: absolute; top: 50%; transform: translateY(-50%); z-index: 6;
-  width: 48px; height: 48px; border-radius: 50%; border: 1px solid #ead9bf;
-  background: rgba(255,255,255,.92); color: var(--wine); cursor: pointer;
-  box-shadow: var(--shadow-md); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  transition: background .25s var(--ease), transform .25s var(--ease), color .25s var(--ease);
-  -webkit-tap-highlight-color: transparent; }
-.featured-slider.is-carousel .fc-arrow { display: grid; place-items: center; }
-.fc-arrow.prev { left: -12px; }
-.fc-arrow.next { right: -12px; }
-@media (hover: hover) {
-  .fc-arrow:hover { background: var(--wine); color: #fff; transform: translateY(-50%) scale(1.07); }
+@keyframes featuredFlow {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(calc(-1 * var(--fs-shift, 0px)), 0, 0); }
 }
-.fc-arrow:active { transform: translateY(-50%) scale(.95); }
-@media (max-width: 700px) {
-  .featured-slider.is-carousel .fc-arrow { display: none; }   /* phones: swipe + autoplay */
+
+@media (min-width: 861px) {
+  .featured-track .card-body h3 { font-size: 1.05rem; }
+  .featured-track .price { font-size: 1.05rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .featured-track { transition: none !important; }
+  .featured-track { animation: none; }
 }
 
 /* ---------- responsive YouTube video ---------- */
@@ -663,7 +682,7 @@ html:has(body.modal-open) { overflow: hidden; }
    pinches the photo — our own handler zooms just the picture instead. When a
    slide is zoomed in we switch to touch-action: none so dragging pans the
    picture rather than scrolling the modal. */
-.mg-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: pan-y; }
+.mg-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: pan-y; background: #000; }
 .mg-stage.zoomed { touch-action: none; cursor: grab; }
 .mg-stage.zoomed.grabbing { cursor: grabbing; }
 /* Horizontal slider: all slides sit side by side and the track translates. */
@@ -705,10 +724,10 @@ html:has(body.modal-open) { overflow: hidden; }
   .mg-slide .mg-hi { transition: none; }
 }
 .mg-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%;
-  border: none; background: var(--gold); color: #2a1a05; cursor: pointer; display: grid; place-items: center;
-  font-size: 1.3rem; backdrop-filter: blur(6px); transition: .25s; z-index: 3;
-  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-@media (hover: hover) { .mg-arrow:hover { background: var(--gold-light); color: #2a1a05; } }
+  border: none; background: rgba(255,255,255,.92); color: var(--wine); cursor: pointer; display: grid; place-items: center;
+  font-size: 1.3rem; box-shadow: var(--shadow-md); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: .25s; z-index: 3; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { .mg-arrow:hover { background: #fff; color: var(--wine); } }
 .mg-arrow.prev { left: 14px; } .mg-arrow.next { right: 14px; }
 .mg-thumbs { display: flex; gap: 10px; padding: 14px; overflow-x: auto; background: #160611; }
 .mg-thumbs img { width: 64px; height: 84px; object-fit: cover; border-radius: 8px; cursor: pointer; opacity: .55;
@@ -720,12 +739,16 @@ html:has(body.modal-open) { overflow: hidden; }
 .modal-info .m-color { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 18px; }
 .modal-info .m-color .dot { width: 16px; height: 16px; border-radius: 50%; }
 .modal-info .m-type { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-  margin-bottom: 16px; padding: 6px 14px; border-radius: 999px; font-size: .9rem; font-weight: 600;
-  color: var(--wine); background: var(--ivory-2); border: 1px solid #ecdfcb; }
+  margin-bottom: 16px; padding: 0; border-radius: 0; font-size: .9rem; font-weight: 600;
+  color: var(--wine); background: none; border: 0; }
 .modal-info .m-type .m-type-label { color: var(--muted); font-weight: 600; }
 .modal-info .m-details { color: #5a4d51; flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 22px;
   padding-right: 6px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; }
+/* Price sits on the same row as the "Saree Cloth" tag, above the description. */
+.modal-info .m-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 14px; margin-bottom: 18px; }
+.modal-info .m-meta .m-type { margin-bottom: 0; align-self: auto; }
+.modal-info .m-meta .m-price { margin-bottom: 0; }
 /* Mirror the product card: a "Buy Now" (outline) + "Add to Cart" (primary)
    pair sharing the row, each growing to fill the available width. */
 .modal-info .m-buy { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -748,13 +771,36 @@ html:has(body.modal-open) { overflow: hidden; }
      bottom shows this dark colour, never the website behind it. */
   .modal { background: #160611; }
   .modal-card { grid-template-columns: 1fr; margin: 0; height: auto; min-height: 100%; max-height: none; border-radius: 0;
-    overflow: visible; overscroll-behavior: contain; }
+    overflow: visible; overscroll-behavior: contain;
+    /* No pop transform on phones: a transformed ancestor would trap the
+       position:fixed action bar inside the card instead of the viewport. */
+    animation: none; }
   .modal-gallery { overflow: visible; }
   .mg-stage { min-height: 46vh; }
   .modal-info { padding: 26px 22px; overflow: visible; }
   /* The whole modal scrolls on phones, so let the description flow naturally
      instead of becoming its own scroll region. */
   .modal-info .m-details { overflow-y: visible; min-height: 0; padding-right: 0; }
+
+  /* Keep the "Buy Now" + "Add to Cart" actions pinned to the bottom of the
+     screen so they're always reachable while the shopper scrolls the saree's
+     photos and details. Reserve space below the info so nothing hides behind. */
+  .modal-info { padding-bottom: 92px; }
+  .modal.open .modal-info .m-buy {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 260;
+    display: flex; flex-wrap: nowrap; gap: 10px;
+    /* The cream group extends a few px past the very bottom edge (margin-bottom
+       cancelled by matching padding) so the dark page-behind never shows as a
+       hairline under it. Buttons keep their position — they aren't pushed up. */
+    padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 18px);
+    margin-bottom: -6px;
+    background: var(--ivory); border-top: 0;
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, .10);
+  }
+  .modal.open .modal-info .m-buy .btn {
+    flex: 1 1 0; min-width: 0; width: auto; justify-content: center;
+    padding: 13px 14px; font-size: .92rem; white-space: nowrap;
+  }
 }
 
 /* ---------- toast / snackbar ---------- */
@@ -775,7 +821,7 @@ html:has(body.modal-open) { overflow: hidden; }
 .notice { text-align: center; padding: 40px; border-radius: var(--radius); background: #fff;
   border: 1px dashed var(--gold); color: var(--muted); }
 .notice b { color: var(--wine); }
-.skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px),1fr)); gap: clamp(12px, 1.6vw, 22px); }
+.skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px),1fr)); gap: clamp(12px, 1.5vw, 20px); }
 .skeleton { border-radius: var(--radius); overflow: hidden; background: #fff; box-shadow: var(--shadow-sm); }
 .skeleton .sk-img { aspect-ratio: 3/4; background: linear-gradient(100deg, #f0e8dc 30%, #f8f2e8 50%, #f0e8dc 70%);
   background-size: 200% 100%; animation: shimmer 1.4s infinite; }
@@ -986,7 +1032,8 @@ body.home.wa-shown .wa-float { opacity: 1; visibility: visible; pointer-events: 
   .card-foot .price { flex: 1 1 auto; }
   .qty button { width: 28px; height: 30px; font-size: .95rem; }
   .qty input { width: 30px; height: 30px; }
-  .card-foot .btn { flex: 1 1 100%; width: 100%; padding: 8px 12px; font-size: .74rem; border-radius: 10px; justify-content: center; }
+  .card-foot .btn { width: 100%; min-width: 0; padding: 9px 5px; font-size: .62rem; font-weight: 500;
+    white-space: nowrap; border-radius: 10px; justify-content: center; }
   .badge-color { top: 8px; left: 8px; padding: 4px 8px; font-size: .66rem; }
   .card-view { right: 8px; bottom: 8px; padding: 6px 10px; font-size: .72rem; opacity: 1; transform: none; }
   /* Cart row: image + details on top, price/remove on their own line below
