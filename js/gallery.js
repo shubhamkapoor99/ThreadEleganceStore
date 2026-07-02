@@ -15,6 +15,13 @@
   const modal = document.getElementById("gallery-modal");
   if (!modal) return;
 
+  // Take full control of scroll position across history changes. Otherwise the
+  // browser auto-restores a (wrong) scroll position when we rewind the gallery's
+  // history step on close, dropping the shopper somewhere else on the page. With
+  // this off, our own save/restore in lock/unlockScroll is the single source of
+  // truth, so closing a card always returns to the exact spot it opened from.
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
   const stageEl = modal.querySelector(".mg-stage");
   // The markup ships a single static <img data-mstage>; we render our own
   // sliding track instead, so hide the static node (kept for backwards compat).
@@ -51,6 +58,10 @@
   const zoomOutBtn = zoomCtrls.querySelector(".mg-zoom-out");
 
   let imgs = [], imgsAlt = [], idx = 0;
+
+  // Scroll position of the page BEHIND the modal, captured the moment we open so
+  // we can drop the shopper back on the exact same spot when the gallery closes.
+  let savedScrollY = 0;
 
   /* ---- picture zoom (pinch on touch, buttons + wheel on desktop) ----
      The zoom transform is applied to the CURRENT slide only, so it scales the
@@ -215,6 +226,9 @@
     if (buyBtn) {
       buyBtn.onclick = () => {
         if (!window.getCart().some((c) => c.id === p.id)) window.addOneToCart(p);
+        // Tear the modal down (and rewind its history step) BEFORE leaving, so
+        // the cart page's history back-stack doesn't carry a stale gallery entry.
+        closeGallery();
         window.location.href = "cart.html";
       };
     }
@@ -231,37 +245,92 @@
 
     buildTrack(p);
 
+    // Only push a history entry on a real closed -> open transition (tying it to
+    // the modal's own state instead of a separate flag that could drift out of
+    // sync). This adds a "gallery" step to history so the phone's back gesture
+    // (edge swipe) or hardware/browser Back button closes THIS modal first,
+    // leaving the shopper on the exact same spot of the same page they opened
+    // the card from — instead of navigating away to the sarees listing.
+    const wasOpen = modal.classList.contains("open");
     modal.classList.add("open");
     lockScroll();
+    if (!wasOpen && !(history.state && history.state.galleryOpen)) {
+      history.pushState({ galleryOpen: true }, "");
+    }
   }
 
-  // Freeze the page behind the modal WITHOUT touching html/body overflow (which
-  // can stop a fixed overlay from scrolling on mobile). Instead we swallow
-  // scroll gestures that start outside the modal; gestures inside it scroll the
-  // modal normally, and its `overscroll-behavior: contain` stops them from
-  // bleeding through to the page at the edges. Works on touch + desktop alike.
+  // Belt-and-braces on top of the position:fixed body lock: swallow any scroll
+  // gesture that starts outside the modal so a hard/rubber-band flick can't drag
+  // the frozen page. Gestures inside the modal scroll it normally, and its
+  // `overscroll-behavior: contain` stops them bleeding through at the edges.
   function blockBgScroll(e) {
     if (!modal.contains(e.target)) e.preventDefault();
   }
   function lockScroll() {
+    // Remember where the shopper was, then pin the page there. Using
+    // position:fixed + a negative top offset (instead of plain overflow:hidden)
+    // is the one technique mobile Safari/Chrome honour without snapping the page
+    // back to the top — so closing the gallery restores the exact same area.
+    savedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.top = `-${savedScrollY}px`;
     document.body.classList.add("modal-open");
     document.addEventListener("touchmove", blockBgScroll, { passive: false });
     document.addEventListener("wheel", blockBgScroll, { passive: false });
   }
   function unlockScroll() {
+    const y = savedScrollY;
+    // The site sets html { scroll-behavior: smooth }, which would make the
+    // restore visibly animate (snap to top, then scroll down to the card's
+    // spot). Force an INSTANT jump so the page is already exactly where it was
+    // the moment the modal disappears — no scrolling motion at all.
+    const rootStyle = document.documentElement.style;
+    const prevBehavior = rootStyle.scrollBehavior;
+    rootStyle.scrollBehavior = "auto";
+
     document.body.classList.remove("modal-open");
+    document.body.style.top = "";
+    window.scrollTo(0, y);
+    // Re-apply next frame: some mobile browsers need a tick to reflow the page
+    // height after position:fixed is removed before scrollTo takes effect.
+    requestAnimationFrame(() => {
+      window.scrollTo(0, y);
+      rootStyle.scrollBehavior = prevBehavior;
+    });
+
     document.removeEventListener("touchmove", blockBgScroll, { passive: false });
     document.removeEventListener("wheel", blockBgScroll, { passive: false });
   }
 
-  function closeGallery() {
+  // fromPopstate === true means the browser already went back (via swipe/Back),
+  // so we must NOT call history.back() again — just tear the modal down.
+  function closeGallery(fromPopstate) {
+    if (!modal.classList.contains("open")) return;
     modal.classList.remove("open");
     resetZoom();
     unlockScroll();
+    // Manual close (X / backdrop / Esc): rewind the "gallery" history step we
+    // added on open so a later back gesture doesn't have a stale entry to pop.
+    // On a popstate close the browser already rewound it, so don't double-pop.
+    if (fromPopstate !== true && history.state && history.state.galleryOpen) {
+      history.back();
+    }
   }
 
-  modal.querySelector("[data-mclose]").addEventListener("click", closeGallery);
-  modal.querySelector(".modal-bg").addEventListener("click", closeGallery);
+  // A back gesture / Back button pops our pushed entry: close the modal instead
+  // of letting the browser leave the page.
+  window.addEventListener("popstate", () => {
+    if (modal.classList.contains("open")) closeGallery(true);
+  });
+
+  // If the page is restored from the back/forward cache (e.g. after a "Buy Now"
+  // jump to the cart and then Back), make sure we don't come back to a stale
+  // open modal sitting on top of the page.
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted && modal.classList.contains("open")) closeGallery(true);
+  });
+
+  modal.querySelector("[data-mclose]").addEventListener("click", () => closeGallery());
+  modal.querySelector(".modal-bg").addEventListener("click", () => closeGallery());
   modal.querySelector(".mg-arrow.prev").addEventListener("click", () => showSlide(idx - 1));
   modal.querySelector(".mg-arrow.next").addEventListener("click", () => showSlide(idx + 1));
   document.addEventListener("keydown", (e) => {
