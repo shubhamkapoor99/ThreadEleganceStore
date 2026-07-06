@@ -416,11 +416,15 @@ function render() {
           ? `<span class="price">${window.money(p.price)}</span>`
           : `<span class="price"><small>Price on request</small></span>`)
       : `<span class="price"><small>Price: Calculated on WhatsApp</small></span>`;
+    // The first row (above the fold) loads eagerly at high priority so the
+    // shopper sees real sarees fast; everything below stays lazy.
+    const eager = i < 4;
     return `
       <div class="card reveal ${i % 3 === 1 ? "d1" : i % 3 === 2 ? "d2" : ""}" data-id="${p.id}">
         <div class="card-inner">
           <div class="card-media">
-            <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy" decoding="async"
+            <img src="${p.cover || p.images[0]}" alt="${p.name}"
+                 loading="${eager ? "eager" : "lazy"}" fetchpriority="${eager ? "high" : "auto"}" decoding="async"
                  srcset="${p.coverSrcset || ''}"
                  sizes="(max-width:560px) 46vw, (max-width:992px) 30vw, 250px"
                  data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
