@@ -15,7 +15,7 @@
   <link rel="dns-prefetch" href="https://drive.google.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
-  <link rel="stylesheet" href="css/styles.css?v=20260718" />
+  <link rel="stylesheet" href="css/styles.css?v=20260706g" />
 </head>
 <body class="home">
   <div class="loader"><div class="ring"></div></div>
@@ -153,7 +153,7 @@
   <script src="js/drive.js"></script>
   <script src="js/store.js"></script>
   <script src="js/ui.js"></script>
-  <script src="js/gallery.js?v=20260631"></script>
+  <script src="js/gallery.js?v=20260706c"></script>
   <script>renderChrome("index.html");</script>
 
   <!-- Shop By Occasion dropdown (next to "View All Sarees") -->
@@ -250,10 +250,9 @@
                   onload="this.classList.add('loaded')"
                   onerror="window.driveImgError(this)">
                 <span class="shine"></span>
-                <button class="card-view" data-view="${p.id}">View Gallery</button>
               </div>
               <div class="card-body">
-                <h3>${p.name}</h3>
+                <h3>${window.nameToHtml(p.name)}</h3>
                 ${p.type && p.type.trim() ? `<span class="card-tag">${p.type.trim()}</span>` : ""}
                 <div class="card-foot">
                   <span class="price">${window.SHOW_PRICE ? (p.price ? window.money(p.price) : "<small>Price on request</small>") : "<small>Price: Calculated on WhatsApp</small>"}</span>
