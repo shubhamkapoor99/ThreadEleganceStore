@@ -7,7 +7,11 @@
   <meta name="description" content="Browse our full collection of handwoven sarees. Filter by colour and find your perfect drape." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Warm up the Google Drive image hosts early so saree photos start loading sooner -->
+  <!-- Warm up the image hosts early so saree photos start loading sooner.
+       wsrv.nl is the CDN that actually serves the saree <img> src, so it comes
+       first; the Google hosts are the origin/fallback endpoints behind it. -->
+  <link rel="preconnect" href="https://wsrv.nl" crossorigin>
+  <link rel="dns-prefetch" href="https://wsrv.nl">
   <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
   <link rel="preconnect" href="https://drive.google.com" crossorigin>
   <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
