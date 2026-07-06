@@ -1,5 +1,5 @@
 # ThreadElegance Store
-
+https://drive.google.com/drive/folders/1ixNsc36cf89W4YT5zVkJk7-I3LY4K8B9?usp=sharing
 A modern, **fully static** online saree store — no backend, no login. Cart &
 "session" data live in the browser (`localStorage`), and orders are placed
 through **WhatsApp**, exactly like the original site. The catalog is loaded
