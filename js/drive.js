@@ -146,7 +146,24 @@ function parseInfoText(text, group) {
   });
 
   result.details = detailParts.join(" ").trim();
+
+  // Some sources hand back HTML-encoded text (e.g. "Red &amp; Gold"), which would
+  // otherwise show the raw "&amp;" on the card. Decode entities so "&" and friends
+  // render correctly wherever the text is placed via innerHTML.
+  result.name = decodeEntities(result.name);
+  result.color = decodeEntities(result.color);
+  result.type = decodeEntities(result.type);
+  result.details = decodeEntities(result.details);
+  result.tags = result.tags.map(decodeEntities);
   return result;
+}
+
+// Turn HTML entities (&amp;, &#39;, &quot; …) back into plain characters.
+function decodeEntities(str = "") {
+  if (!str || str.indexOf("&") === -1) return str;
+  const el = document.createElement("textarea");
+  el.innerHTML = str;
+  return el.value;
 }
 
 /* ---- Drive REST calls ------------------------------------------- */
