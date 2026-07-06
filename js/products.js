@@ -427,10 +427,9 @@ function render() {
                  onload="this.classList.add('loaded')"
                  onerror="window.driveImgError(this)">
             <span class="shine"></span>
-            <button class="card-view" data-view="${p.id}">View Gallery</button>
           </div>
           <div class="card-body">
-            <h3>${p.name}</h3>
+            <h3>${window.nameToHtml(p.name)}</h3>
             ${p.type && p.type.trim()
               ? `<span class="card-tag">${p.type.trim()}</span>`
               : ""}
