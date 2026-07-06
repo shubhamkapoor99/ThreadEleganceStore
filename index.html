@@ -8,7 +8,11 @@
   <meta name="description" content="Timeless elegance, woven in silk. Discover handpicked traditional & contemporary sarees." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Warm up the Google Drive image hosts early so saree photos start loading sooner -->
+  <!-- Warm up the image hosts early so saree photos start loading sooner.
+       wsrv.nl is the CDN that actually serves the saree <img> src, so it comes
+       first; the Google hosts are the origin/fallback endpoints behind it. -->
+  <link rel="preconnect" href="https://wsrv.nl" crossorigin>
+  <link rel="dns-prefetch" href="https://wsrv.nl">
   <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
   <link rel="preconnect" href="https://drive.google.com" crossorigin>
   <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
@@ -239,11 +243,12 @@
           return;
         }
 
-        const cardHTML = (p) => `
+        const cardHTML = (p, i = 0) => `
           <div class="card" data-id="${p.id}">
             <div class="card-inner">
               <div class="card-media">
-                <img src="${p.cover || p.images[0]}" alt="${p.name}" loading="lazy" decoding="async"
+                <img src="${p.cover || p.images[0]}" alt="${p.name}"
+                  loading="${i < 3 ? "eager" : "lazy"}" fetchpriority="${i < 3 ? "high" : "auto"}" decoding="async"
                   srcset="${p.coverSrcset || ''}"
                   sizes="(max-width:560px) 62vw, 300px"
                   data-alt="${p.coverAlt || (p.imagesAlt && p.imagesAlt[0]) || ''}"
@@ -331,7 +336,10 @@
 
           slider.classList.remove("is-static");
           const copies = Math.max(3, Math.ceil(vw / stride) + 2);
-          grid.innerHTML = Array.from({ length: copies }, () => list.map(cardHTML).join("")).join("");
+          // Only the first (visible) copy prioritises its leading images; the
+          // repeated marquee copies stay lazy so we don't over-fetch.
+          grid.innerHTML = Array.from({ length: copies }, (_, c) =>
+            list.map((p, i) => cardHTML(p, c === 0 ? i : 99)).join("")).join("");
           grid.style.setProperty("--fs-shift", stride + "px");
           grid.style.setProperty("--fs-dur", Math.max(12, Math.round(stride / SPEED)) + "s");
           grid.style.animation = "";                     // hand control back to CSS keyframes
