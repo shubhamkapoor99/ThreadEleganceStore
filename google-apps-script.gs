@@ -2,12 +2,12 @@
  * ThreadElegance Store — Google Drive catalog feed
  * ---------------------------------------------------------------
  * This tiny Google Apps Script lets your website read your Drive
- * folder WITHOUT any API key or Google Cloud Console setup.
+ * folder(s) WITHOUT any API key or Google Cloud Console setup.
  *
  * SETUP (one time, ~3 minutes):
  *   1. Open https://script.google.com  ->  New project.
  *   2. Delete the sample code, paste THIS whole file.
- *   3. The FOLDER_ID below is already set to your folder.
+ *   3. The folder ids below are already set to your folders.
  *   4. Click  Deploy  ->  New deployment.
  *   5. "Select type" (gear icon)  ->  Web app.
  *   6. Execute as:  Me.   Who has access:  Anyone.
@@ -15,12 +15,29 @@
  *   8. Copy the "Web app URL" (it ends with /exec).
  *   9. Paste that URL into  js/config.js  ->  drive.appsScriptUrl.
  *
- * ALSO: share the Drive folder itself as
- *   "Anyone with the link"  ->  Viewer
- * so the saree images can be shown on the website.
+ * TWO-FOLDER SETUP (current):
+ *   • IMAGE_FOLDER_ID — holds all saree images (and the video). This folder
+ *     MUST be shared "Anyone with the link -> Viewer", because each visitor's
+ *     browser loads the pictures directly from Google. If it isn't public the
+ *     images fall back to a grey placeholder.
+ *   • TEXT_FOLDER_ID  — holds the ".txt" detail files only. This script reads
+ *     their text itself (it runs as YOU, "Execute as: Me"), so this folder can
+ *     stay private/restricted — no public sharing needed.
+ *
+ *   Images and their ".txt" are matched by the group number in the file name
+ *   (e.g. 28_1.png in the image folder pairs with 28.txt in the text folder),
+ *   so the two folders can live apart and still assemble into one product.
+ *
+ * IMPORTANT: after editing folder ids you must Deploy -> Manage deployments ->
+ * edit the deployment -> New version, or the live URL keeps the old code.
  */
 
-var FOLDER_ID = '19LjKR9KSomQOVc5r_S8fneon4uQYtZTd';
+// Images (+ video) — share this folder "Anyone with the link -> Viewer".
+var IMAGE_FOLDER_ID = '1ixNsc36cf89W4YT5zVkJk7-I3LY4K8B9';
+// ".txt" detail files — read as the owner, so this one may stay private.
+var TEXT_FOLDER_ID = '19LjKR9KSomQOVc5r_S8fneon4uQYtZTd';
+// Every folder to scan. Add more ids here if you ever split things further.
+var FOLDER_IDS = [IMAGE_FOLDER_ID, TEXT_FOLDER_ID];
 // Keep the built catalog cached for the maximum allowed (6 h) so it never goes
 // cold on its own between visits.
 var CACHE_TTL_SECONDS = 21600;   // 6 hours (CacheService maximum)
@@ -54,25 +71,37 @@ function warmCache() {
   buildCatalog_(CacheService.getScriptCache());
 }
 
-// Reads the whole folder, bundles each .txt inline, caches the JSON, returns it.
+// Reads every configured folder, bundles each .txt inline, caches the JSON,
+// returns it. Files from all folders are merged into ONE list; the site groups
+// them into products by the number in each file name, so images and their .txt
+// can live in separate folders.
 function buildCatalog_(cache) {
-  var folder = DriveApp.getFolderById(FOLDER_ID);
-  var files = folder.getFiles();
   var arr = [];
+  var seen = {};   // guard against the same file id appearing twice
 
-  while (files.hasNext()) {
-    var f = files.next();
-    var name = f.getName();
-    // Send the MIME type so the site can recognise ANY image format Drive
-    // knows about (jpg, jpeg, heic, webp, tiff, …), not only files ending .png.
-    var item = { name: name, id: f.getId(), mimeType: f.getMimeType() };
+  for (var i = 0; i < FOLDER_IDS.length; i++) {
+    var id = FOLDER_IDS[i];
+    if (!id) continue;
+    var files = DriveApp.getFolderById(id).getFiles();
 
-    // Include the text of .txt files inline (so the site needs no extra call)
-    if (/\.txt$/i.test(name)) {
-      try { item.text = f.getBlob().getDataAsString('UTF-8'); }
-      catch (err) { item.text = ''; }
+    while (files.hasNext()) {
+      var f = files.next();
+      var fileId = f.getId();
+      if (seen[fileId]) continue;   // skip if the same folder id was listed twice
+      seen[fileId] = true;
+
+      var name = f.getName();
+      // Send the MIME type so the site can recognise ANY image format Drive
+      // knows about (jpg, jpeg, heic, webp, tiff, …), not only files ending .png.
+      var item = { name: name, id: fileId, mimeType: f.getMimeType() };
+
+      // Include the text of .txt files inline (so the site needs no extra call)
+      if (/\.txt$/i.test(name)) {
+        try { item.text = f.getBlob().getDataAsString('UTF-8'); }
+        catch (err) { item.text = ''; }
+      }
+      arr.push(item);
     }
-    arr.push(item);
   }
 
   var payload = JSON.stringify(arr);
