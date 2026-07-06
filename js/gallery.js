@@ -194,7 +194,8 @@
   function openGallery(p) {
     if (!p) return;
 
-    modal.querySelector("[data-mtitle]").textContent = p.name;
+    modal.querySelector("[data-mtitle]").innerHTML =
+      (window.nameToHtml ? window.nameToHtml(p.name) : p.name);
     const typeEl = modal.querySelector("[data-mtype]");
     if (typeEl) {
       const t = (p.type || "").trim();
