@@ -370,10 +370,21 @@ function renderChrome(active) {
   updateCartCount();
 }
 
+// Safely turn a product name into title HTML. Escapes the text, then renders any
+// "&" in a plain sans font — the serif title font (Playfair Display) draws an
+// ornate ampersand glyph that looks out of place in a saree name.
+function nameToHtml(name = "") {
+  const esc = String(name)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return esc.replace(/&amp;/g, '<span class="amp">&amp;</span>');
+}
+
 /* expose */
 Object.assign(window, {
   getCart, setCart, addToCart, setQuantity, removeFromCart, clearCart,
   cartCount, cartTotal, updateCartCount, buildWhatsAppOrder, renderChrome, money,
-  productCartShape, addOneToCart, showToast,
+  productCartShape, addOneToCart, showToast, nameToHtml,
   SHOW_PRICE, PRICE_HIDDEN_TEXT, priceLabel, OCCASIONS,
 });
