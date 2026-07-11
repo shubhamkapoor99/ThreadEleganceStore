@@ -250,8 +250,8 @@
     modal.querySelector("[data-mprice]").innerHTML = window.SHOW_PRICE
       ? (p.price
           ? window.money(p.price)
-          : "<small style='font-size:1rem;color:var(--muted)'>Price on request</small>")
-      : "<small style='font-size:1rem;color:var(--muted)'>Price: Calculated on WhatsApp</small>";
+          : "<small style='font-size:1rem;color:#000'>Price on request</small>")
+      : "<small style='font-size:1rem;color:#000'>Price: Calculated on WhatsApp</small>";
 
     // "Add to Cart" / "Buy Now" mirror the product-card buttons exactly:
     // add one more of this saree (with a toast), or add + jump to the cart.
@@ -462,16 +462,18 @@
     const dy = e.changedTouches[0].clientY - (touchStartY || 0);
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       showSlide(idx + (dx < 0 ? 1 : -1));
-    } else if (!e.target.closest(".mg-arrow, .mg-zoom")) {
-      // A single-finger tap on the photo → open full screen.
+    } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 &&
+               !e.target.closest(".mg-arrow, .mg-zoom")) {
+      // Only a real TAP (barely any movement) opens full screen — a vertical
+      // scroll drag must fall through so the page just scrolls, never zooms.
       openFs(idx);
     }
     touchStartX = null;
   }, { passive: true });
 
   /* ---- desktop: scroll wheel to zoom, drag to pan, double-click to toggle ---- */
-  // Desktop trackpad / mouse on the card image:
-  //  • PINCH (wheel + ctrlKey) → open the full-screen viewer and zoom there.
+  // Desktop trackpad / mouse on the card image (NO full-screen on desktop):
+  //  • PINCH (wheel + ctrlKey) → zoom the image IN PLACE at the cursor.
   //  • Horizontal two-finger swipe → move between images (one per swipe).
   //  • Plain vertical scroll → left alone so it scrolls the modal up/down.
   const cardPager = makeWheelPager((dir) => showSlide(idx + dir));
@@ -479,13 +481,8 @@
     if (!modal.classList.contains("open")) return;
     if (e.target.closest(".mg-zoom")) return;
     if (e.ctrlKey) {
-      // A pinch on the card jumps into the full-screen viewer (where zooming
-      // lives) and zooms toward the cursor, instead of zooming the tiny stage.
       e.preventDefault();
-      if (!fsOpen && e.deltaY < 0) {          // pinch-out = a zoom-IN gesture
-        openFs(idx);
-        fsZoomTo(fsZoom + FS_STEP / 2, e.clientX, e.clientY);
-      }
+      setZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP / 2 : -ZOOM_STEP / 2), e.clientX, e.clientY);
       return;
     }
     if (zoom <= 1.01 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
