@@ -762,14 +762,15 @@ html:has(body.modal-open) { overflow: hidden; }
 .modal-info .m-color { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 18px; }
 .modal-info .m-color .dot { width: 16px; height: 16px; border-radius: 50%; }
 .modal-info .m-type { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-  margin-bottom: 16px; padding: 0; border-radius: 0; font-size: .9rem; font-weight: 600;
-  color: var(--wine); background: none; border: 0; }
-.modal-info .m-type .m-type-label { color: var(--muted); font-weight: 600; }
-.modal-info .m-details { color: #5a4d51; flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 22px;
+  margin-bottom: 16px; padding: 0; border-radius: 0; font-size: 1rem; font-weight: 600;
+  color: #000; background: none; border: 0; }
+.modal-info .m-type .m-type-label { color: #000; font-weight: 600; }
+.modal-info .m-details { color: #5a4d51; font-size: .82rem; line-height: 1.55; flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; margin-bottom: 22px;
   padding-right: 6px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; }
+.modal-info .m-price { font-size: 1.8rem; font-weight: 700; margin-bottom: 18px; line-height: 1.15; }
 /* "Saree Cloth" tag and Price stack on separate lines, above the description. */
-.modal-info .m-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
+.modal-info .m-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 18px; }
 .modal-info .m-meta .m-type { margin-bottom: 0; align-self: auto; }
 .modal-info .m-meta .m-price { margin-bottom: 0; }
 /* Mirror the product card: a "Buy Now" (outline) + "Add to Cart" (primary)
