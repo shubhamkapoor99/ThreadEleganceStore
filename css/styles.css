@@ -728,6 +728,10 @@ html:has(body.modal-open) { overflow: hidden; }
   .mg-zoom { right: 10px; bottom: 10px; gap: 7px; }
   .mg-zoom-btn { width: 36px; height: 36px; font-size: 1.2rem; }
 }
+/* On touch devices the card stage doesn't zoom — tapping opens the full-screen
+   viewer instead — so hide the card's zoom buttons (the full-screen viewer keeps
+   its own .mgfs-zoom controls). */
+@media (pointer: coarse) { .mg-zoom { display: none; } }
 /* The low-res preview shows instantly (sharp, no blur); the hi-res fades in
    on top of it the moment it has finished loading. */
 .mg-slide .mg-base { z-index: 1; }
@@ -802,6 +806,10 @@ html:has(body.modal-open) { overflow: hidden; }
     animation: none; }
   .modal-gallery { overflow: visible; }
   .mg-stage { min-height: 46vh; }
+  /* Make sure a one-finger vertical swipe that lands on the photo (or the track
+     / slide) scrolls the modal up/down instead of being swallowed — the browser
+     handles the vertical pan; our JS only reads horizontal flicks + pinches. */
+  .mg-stage, .mg-track, .mg-slide, .mg-slide img { touch-action: pan-y; }
   .modal-info { padding: 26px 22px; overflow: visible; }
   /* The whole modal scrolls on phones, so let the description flow naturally
      instead of becoming its own scroll region. */
@@ -826,6 +834,96 @@ html:has(body.modal-open) { overflow: hidden; }
     flex: 1 1 0; min-width: 0; width: auto; justify-content: center;
     padding: 9px 12px; font-size: .82rem; white-space: nowrap; border-radius: 10px;
   }
+}
+
+/* ---------- full-screen immersive image viewer ---------- */
+/* Opens when the shopper taps the photo inside a saree card. Edge-to-edge black
+   stage that owns the whole screen for zooming and swiping; sits above the card
+   modal so the X (or Back) drops straight back onto the same card. */
+.mgfs { position: fixed; inset: 0; z-index: 500; display: none; background: #000;
+  touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+.mgfs.open { display: block; animation: mgfsIn .25s var(--ease); }
+@keyframes mgfsIn { from { opacity: 0; } to { opacity: 1; } }
+
+.mgfs-track { display: flex; height: 100%; width: 100%;
+  transition: transform .38s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
+.mgfs.grabbing .mgfs-track { transition: none; }
+.mgfs-slide { position: relative; flex: 0 0 100%; width: 100%; height: 100%;
+  display: grid; place-items: center; overflow: hidden;
+  transform-origin: center center; transition: transform .18s var(--ease); will-change: transform; }
+.mgfs.grabbing .mgfs-slide { transition: none; }
+.mgfs-slide img { grid-area: 1 / 1; width: 100%; height: 100%; object-fit: contain;
+  -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+.mgfs-slide .mgfs-base { z-index: 1; }
+.mgfs-slide .mgfs-hi { z-index: 2; opacity: 0; transition: opacity .25s ease; }
+.mgfs-slide .mgfs-hi.loaded { opacity: 1; }
+
+.mgfs-close { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 12px; z-index: 520;
+  width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; line-height: 1;
+  border: 1px solid rgba(255,255,255,.35); background: rgba(20,6,14,.55); color: #fff; cursor: pointer;
+  font-size: 1.5rem; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: background .2s var(--ease), transform .15s var(--ease);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { .mgfs-close:hover { background: rgba(20,6,14,.85); transform: scale(1.08); } }
+.mgfs-close:active { transform: scale(.94); }
+
+.mgfs-arrow { position: fixed; top: 50%; transform: translateY(-50%); z-index: 510;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid rgba(255,255,255,.3); background: rgba(20,6,14,.42); color: #fff; cursor: pointer;
+  font-size: 1.5rem; line-height: 1; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: background .2s var(--ease), transform .15s var(--ease);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.mgfs-arrow.prev { left: 12px; } .mgfs-arrow.next { right: 12px; }
+@media (hover: hover) { .mgfs-arrow:hover { background: rgba(20,6,14,.75); } }
+.mgfs-arrow:active { transform: translateY(-50%) scale(.92); }
+/* While the picture is zoomed the arrows would fight with panning, so fade them
+   back and let the zoomed image own the whole surface. */
+.mgfs.zoomed .mgfs-arrow { opacity: 0; pointer-events: none; }
+
+/* --- thumbnail strip: same jump-to-any-image row the card shows --- */
+.mgfs-thumbs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 512;
+  display: flex; gap: 8px; padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  overflow-x: auto; overflow-y: hidden; justify-content: flex-start;
+  background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0));
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-x;
+  scrollbar-width: none; transition: opacity .2s var(--ease); }
+.mgfs-thumbs::-webkit-scrollbar { display: none; }
+/* Centre the row when the thumbs don't fill the width, but still allow scroll
+   when there are many. */
+.mgfs-thumbs { justify-content: safe center; }
+.mgfs-thumbs img { width: 52px; height: 68px; object-fit: cover; border-radius: 8px; cursor: pointer;
+  opacity: .55; border: 2px solid transparent; transition: opacity .2s, border-color .2s;
+  flex: 0 0 auto; -webkit-user-drag: none; user-select: none; }
+.mgfs-thumbs img.active { opacity: 1; border-color: var(--gold); }
+@media (hover: hover) { .mgfs-thumbs img:hover { opacity: 1; } }
+/* When zoomed, clear the chrome so the picture owns the screen. */
+.mgfs.zoomed .mgfs-thumbs { opacity: 0; pointer-events: none; }
+
+.mgfs-zoom { position: fixed; right: 14px; z-index: 515; display: flex; gap: 10px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); transition: bottom .2s var(--ease); }
+/* With no thumb strip (single image) drop the zoom controls back to the corner. */
+.mgfs:has(.mgfs-thumbs[style*="display: none"]) .mgfs-zoom,
+.mgfs.zoomed .mgfs-zoom { bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); }
+.mgfs-zoom-btn { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(43,32,36,.72); color: #fff; font-size: 1.5rem; line-height: 1; font-weight: 600;
+  display: grid; place-items: center; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.4); transition: background .2s, transform .15s var(--ease);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.mgfs-zoom-btn:disabled { opacity: .4; cursor: default; }
+.mgfs-zoom-btn:active { transform: scale(.92); }
+@media (hover: hover) { .mgfs-zoom-btn:not(:disabled):hover { background: var(--gold); color: #2a1a05; } }
+
+/* Counter sits top-centre so it never collides with the thumb strip. */
+.mgfs-counter { position: fixed; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + 16px); z-index: 515;
+  padding: 5px 14px; border-radius: 999px; font-size: .82rem; font-weight: 600; letter-spacing: .03em;
+  color: #fff; background: rgba(20,6,14,.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mgfs.open { animation: none; }
+  .mgfs-track, .mgfs-slide, .mgfs-slide .mgfs-hi { transition: none; }
 }
 
 /* ---------- toast / snackbar ---------- */
