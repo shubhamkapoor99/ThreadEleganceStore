@@ -58,6 +58,9 @@
   const zoomOutBtn = zoomCtrls.querySelector(".mg-zoom-out");
 
   let imgs = [], imgsAlt = [], idx = 0;
+  // Remembered for the full-screen viewer so it can reuse the same photos,
+  // low-res previews and captions without re-reading the product object.
+  let curThumbs = [], curName = "";
 
   // Scroll position of the page BEHIND the modal, captured the moment we open so
   // we can drop the shopper back on the exact same spot when the gallery closes.
@@ -70,6 +73,34 @@
   let zoom = 1, panX = 0, panY = 0;
 
   function currentSlide() { return track.children[idx] || null; }
+
+  // Turn noisy trackpad horizontal-wheel events into clean one-image-per-swipe
+  // paging. The tricky part is a two-finger flick leaves a long "momentum" tail
+  // of decaying events: if we page on all of them we skip several images, and if
+  // we simply wait for a pause the next swipe "hangs" behind that momentum. So
+  // we fire once when the accumulated travel passes a threshold, then latch —
+  // re-arming only on a real gap (new gesture) or a rising edge (the finger
+  // clearly pushing again), which momentum never produces because it only fades.
+  function makeWheelPager(showFn) {
+    let accum = 0, armed = true, lastT = 0, lastMag = 0, lastFireT = 0;
+    return function (deltaX) {
+      const now = Date.now();
+      if (now - lastT > 140) { armed = true; accum = 0; lastMag = 0; }  // a pause = new swipe
+      const mag = Math.abs(deltaX);
+      // A fresh push (mag jumps back up) well after the last change re-arms us,
+      // so a new swipe made during the previous swipe's momentum still counts.
+      if (!armed && now - lastFireT > 220 && mag > lastMag + 12 && mag > 12) {
+        armed = true; accum = 0;
+      }
+      lastT = now; lastMag = mag;
+      if (!armed) return;
+      accum += deltaX;
+      if (Math.abs(accum) > 55) {
+        showFn(accum > 0 ? 1 : -1);
+        accum = 0; armed = false; lastFireT = now;
+      }
+    };
+  }
 
   function clampPan() {
     const slide = currentSlide();
@@ -98,16 +129,26 @@
     if (zoomOutBtn) zoomOutBtn.disabled = true;
   }
 
-  // Set an absolute zoom level, keeping the current view roughly centred by
-  // scaling the existing pan offset along with it.
-  function setZoom(z) {
-    const prev = zoom;
-    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
-    if (prev > 0) { panX *= zoom / prev; panY *= zoom / prev; }
+  // Set an absolute zoom level anchored at a focal point (fx/fy screen coords)
+  // so the exact spot under the cursor stays put. Omit fx/fy to zoom about the
+  // centre of the stage. This drives the DESKTOP in-place zoom on the card image
+  // (mobile zooms via pinch → full-screen viewer instead).
+  function setZoom(z, fx, fy) {
+    const nz = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    const sr = stageEl.getBoundingClientRect();
+    const cx = sr.left + sr.width / 2;
+    const cy = sr.top + sr.height / 2;
+    if (fx == null) { fx = cx; fy = cy; }
+    if (zoom > 0) {
+      panX = (fx - cx) - (nz / zoom) * (fx - cx - panX);
+      panY = (fy - cy) - (nz / zoom) * (fy - cy - panY);
+    }
+    zoom = nz;
     if (zoom <= 1.01) { panX = 0; panY = 0; }
     applyZoom();
   }
 
+  // Card zoom controls (shown on desktop) zoom the image in place.
   if (zoomInBtn) zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); setZoom(zoom + ZOOM_STEP); });
   if (zoomOutBtn) zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); setZoom(zoom - ZOOM_STEP); });
 
@@ -139,7 +180,9 @@
   function buildTrack(p) {
     imgs = p.images || [];
     imgsAlt = p.imagesAlt || [];
-    const previews = p.thumbs || [];   // tiny, fast-loading low-res shown instantly
+    curThumbs = p.thumbs || [];
+    curName = p.name || "";
+    const previews = curThumbs;        // tiny, fast-loading low-res shown instantly
     idx = 0;
 
     track.style.transition = "none";          // don't animate the initial position
@@ -317,9 +360,17 @@
     }
   }
 
-  // A back gesture / Back button pops our pushed entry: close the modal instead
-  // of letting the browser leave the page.
+  // Set true only while the full-screen viewer rewinds its OWN history step on a
+  // manual (X / Esc) close, so that self-triggered popstate doesn't also tear
+  // down the card sitting underneath it.
+  let fsPopSuppress = false;
+
+  // A back gesture / Back button pops our pushed entry. Peel the layers in
+  // order: the full-screen viewer first (if up), then the modal — so one Back
+  // never skips straight off the page while a viewer is still open.
   window.addEventListener("popstate", () => {
+    if (fsPopSuppress) { fsPopSuppress = false; return; }
+    if (fsOpen) { closeFs(true); return; }
     if (modal.classList.contains("open")) closeGallery(true);
   });
 
@@ -341,78 +392,115 @@
     if (e.key === "ArrowRight") showSlide(idx + 1);
   });
 
-  /* ---- touch: pinch-to-zoom, drag-to-pan (when zoomed), swipe (when not) ---- */
-  const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  /* ---- touch (mobile): the card stage is for browsing + launching. A tap
+     ANYWHERE on the photo opens the immersive full-screen viewer; a horizontal
+     flick swipes between images; and a PINCH jumps straight into the full-screen
+     viewer while zooming toward the exact spot pinched (never a centred zoom).
+     The pinch keeps flowing because the touch sequence stays bound to this
+     stage even after the viewer opens on top, so we forward it to the viewer. */
+  const tDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const tMid = (a, b) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
+  // Two-finger gestures are ambiguous: fingers moving APART/together = a zoom;
+  // fingers sliding together up/down = a scroll. We wait for the movement to
+  // declare itself before doing anything, so a two-finger scroll never zooms.
+  const PINCH_THRESH = 14;   // px change in finger spread → treat as a zoom
+  const PAN_THRESH = 10;     // px the pair travels together → treat as a scroll
   let touchStartX = null, touchStartY = null;
-  let pinchStartDist = 0, pinchStartZoom = 1;
-  let panLastX = 0, panLastY = 0;
-  let isPinching = false, isPanning = false;
+  let twoFinger = false, gesture = null;   // gesture: "pinch" | "pan" | null
+  let gStartDist = 0, gStartZoom = 1, gLastY = 0;
 
   stageEl.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 2) {
-      isPinching = true; isPanning = false;
-      pinchStartDist = touchDist(e.touches[0], e.touches[1]);
-      pinchStartZoom = zoom;
-      stageEl.classList.add("grabbing");
+    if (e.touches.length >= 2) {
+      // Don't decide yet — wait to see if it's a pinch (zoom) or a pan (scroll).
+      twoFinger = true; gesture = null; touchStartX = null;
+      gStartDist = tDist(e.touches[0], e.touches[1]);
+      gLastY = tMid(e.touches[0], e.touches[1]).y;
     } else if (e.touches.length === 1) {
+      twoFinger = false; gesture = null;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
-      if (zoom > 1.01) {
-        isPanning = true;
-        panLastX = e.touches[0].clientX;
-        panLastY = e.touches[0].clientY;
-        stageEl.classList.add("grabbing");
-      }
     }
   }, { passive: true });
 
+  // Non-passive so a declared PINCH can zoom and a two-finger PAN can scroll the
+  // modal without the browser also acting. One-finger vertical scrolling still
+  // flows natively because we return early and `touch-action: pan-y` makes that
+  // gesture non-cancelable regardless of this listener.
   stageEl.addEventListener("touchmove", (e) => {
-    if (isPinching && e.touches.length === 2) {
-      e.preventDefault();
-      if (pinchStartDist > 0) setZoom(pinchStartZoom * (touchDist(e.touches[0], e.touches[1]) / pinchStartDist));
-    } else if (isPanning && e.touches.length === 1 && zoom > 1.01) {
-      e.preventDefault();
-      panX += e.touches[0].clientX - panLastX;
-      panY += e.touches[0].clientY - panLastY;
-      panLastX = e.touches[0].clientX;
-      panLastY = e.touches[0].clientY;
-      applyZoom();
+    if (!twoFinger || e.touches.length < 2) return;
+    const curDist = tDist(e.touches[0], e.touches[1]);
+    const mid = tMid(e.touches[0], e.touches[1]);
+    if (!gesture) {
+      if (Math.abs(curDist - gStartDist) > PINCH_THRESH) {
+        // A genuine pinch → this is a zoom: open the full-screen viewer.
+        gesture = "pinch";
+        if (!fsOpen) openFs(idx);
+        gStartDist = curDist;     // re-baseline so the zoom grows smoothly
+        gStartZoom = fsZoom;      // fresh viewer starts at 1×
+      } else if (Math.abs(mid.y - gLastY) > PAN_THRESH) {
+        gesture = "pan";          // fingers sliding together → scroll the modal
+      }
     }
+    if (gesture === "pinch") {
+      e.preventDefault();
+      if (gStartDist > 0) fsZoomTo(gStartZoom * (curDist / gStartDist), mid.x, mid.y);
+    } else if (gesture === "pan") {
+      e.preventDefault();
+      modal.scrollTop -= (mid.y - gLastY);   // move the page with the fingers
+    }
+    gLastY = mid.y;
   }, { passive: false });
 
   stageEl.addEventListener("touchend", (e) => {
-    if (isPinching) {
-      if (e.touches.length < 2) { isPinching = false; stageEl.classList.remove("grabbing"); }
-      if (zoom <= 1.01) resetZoom();
+    if (twoFinger) {
+      if (e.touches.length < 2) { twoFinger = false; gesture = null; }
       touchStartX = null;
       return;
     }
-    if (isPanning) {
-      if (e.touches.length === 0) { isPanning = false; stageEl.classList.remove("grabbing"); }
-      touchStartX = null;
-      return;
-    }
-    // No zoom in play → treat a horizontal flick as a slide change.
     if (touchStartX === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - (touchStartY || 0);
-    if (zoom <= 1.01 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       showSlide(idx + (dx < 0 ? 1 : -1));
+    } else if (!e.target.closest(".mg-arrow, .mg-zoom")) {
+      // A single-finger tap on the photo → open full screen.
+      openFs(idx);
     }
     touchStartX = null;
   }, { passive: true });
 
   /* ---- desktop: scroll wheel to zoom, drag to pan, double-click to toggle ---- */
+  // Desktop trackpad / mouse on the card image:
+  //  • PINCH (wheel + ctrlKey) → open the full-screen viewer and zoom there.
+  //  • Horizontal two-finger swipe → move between images (one per swipe).
+  //  • Plain vertical scroll → left alone so it scrolls the modal up/down.
+  const cardPager = makeWheelPager((dir) => showSlide(idx + dir));
   stageEl.addEventListener("wheel", (e) => {
     if (!modal.classList.contains("open")) return;
     if (e.target.closest(".mg-zoom")) return;
-    e.preventDefault();
-    setZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP / 2 : -ZOOM_STEP / 2));
+    if (e.ctrlKey) {
+      // A pinch on the card jumps into the full-screen viewer (where zooming
+      // lives) and zooms toward the cursor, instead of zooming the tiny stage.
+      e.preventDefault();
+      if (!fsOpen && e.deltaY < 0) {          // pinch-out = a zoom-IN gesture
+        openFs(idx);
+        fsZoomTo(fsZoom + FS_STEP / 2, e.clientX, e.clientY);
+      }
+      return;
+    }
+    if (zoom <= 1.01 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault();
+      cardPager(e.deltaX);
+      return;
+    }
+    // Plain vertical scroll → let the page/modal scroll.
   }, { passive: false });
 
   stageEl.addEventListener("dblclick", (e) => {
+    // Desktop only — on touch a double-tap must not zoom the card stage.
+    if (window.matchMedia("(pointer: coarse)").matches) return;
     if (e.target.closest(".mg-arrow, .mg-zoom")) return;
-    setZoom(zoom > 1.01 ? 1 : 2.2);
+    setZoom(zoom > 1.01 ? 1 : 2.2, e.clientX, e.clientY);
   });
 
   // Belt-and-braces: cancel any native drag that still tries to start on the
@@ -440,6 +528,351 @@
   stageEl.addEventListener("pointerup", endMouseDrag);
   stageEl.addEventListener("pointercancel", endMouseDrag);
   stageEl.addEventListener("pointerleave", endMouseDrag);
+
+  /* =====================================================================
+     FULL-SCREEN immersive image viewer
+     Tapping the photo inside the card gallery opens this edge-to-edge
+     viewer. It gives the shopper the ENTIRE screen for the image with every
+     kind of zoom (pinch, double-tap, on-screen +/- buttons, desktop wheel),
+     free panning while zoomed, and left/right swiping between the saree's
+     images. The cross (X) button — or the phone Back gesture — drops the
+     shopper straight back onto the exact same card they came from.
+     ===================================================================== */
+  let fs = document.getElementById("mg-fs");
+  if (!fs) {
+    fs = document.createElement("div");
+    fs.className = "mgfs";
+    fs.id = "mg-fs";
+    fs.innerHTML =
+      `<div class="mgfs-track"></div>` +
+      `<button type="button" class="mgfs-close" aria-label="Close full screen">&times;</button>` +
+      `<button type="button" class="mgfs-arrow prev" aria-label="Previous image">\u2039</button>` +
+      `<button type="button" class="mgfs-arrow next" aria-label="Next image">\u203A</button>` +
+      `<div class="mgfs-zoom">` +
+        `<button type="button" class="mgfs-zoom-btn mgfs-out" aria-label="Zoom out">\u2212</button>` +
+        `<button type="button" class="mgfs-zoom-btn mgfs-in" aria-label="Zoom in">+</button>` +
+      `</div>` +
+      `<div class="mgfs-counter" aria-hidden="true"></div>` +
+      `<div class="mgfs-thumbs" data-mgfs-thumbs></div>`;
+    document.body.appendChild(fs);
+  }
+  const fsTrack = fs.querySelector(".mgfs-track");
+  const fsInBtn = fs.querySelector(".mgfs-in");
+  const fsOutBtn = fs.querySelector(".mgfs-out");
+  const fsCounter = fs.querySelector(".mgfs-counter");
+  const fsPrevBtn = fs.querySelector(".mgfs-arrow.prev");
+  const fsNextBtn = fs.querySelector(".mgfs-arrow.next");
+  const fsThumbs = fs.querySelector("[data-mgfs-thumbs]");
+
+  const FS_MIN = 1, FS_MAX = 6, FS_STEP = 0.8;
+  let fsOpen = false, fsIdx = 0;
+  let fsZoom = 1, fsPanX = 0, fsPanY = 0;
+
+  function fsSlide() { return fsTrack.children[fsIdx] || null; }
+
+  function fsClampPan() {
+    const s = fsSlide();
+    if (!s) return;
+    const maxX = (s.offsetWidth * (fsZoom - 1)) / 2;
+    const maxY = (s.offsetHeight * (fsZoom - 1)) / 2;
+    fsPanX = Math.max(-maxX, Math.min(maxX, fsPanX));
+    fsPanY = Math.max(-maxY, Math.min(maxY, fsPanY));
+  }
+
+  function fsApply() {
+    const s = fsSlide();
+    if (!s) return;
+    fsClampPan();
+    s.style.transform = `translate(${fsPanX}px, ${fsPanY}px) scale(${fsZoom})`;
+    fs.classList.toggle("zoomed", fsZoom > 1.01);
+    if (fsInBtn) fsInBtn.disabled = fsZoom >= FS_MAX - 0.001;
+    if (fsOutBtn) fsOutBtn.disabled = fsZoom <= FS_MIN + 0.001;
+  }
+
+  function fsResetZoom() {
+    fsZoom = 1; fsPanX = 0; fsPanY = 0;
+    fsTrack.querySelectorAll(".mgfs-slide").forEach((s) => { s.style.transform = ""; });
+    fs.classList.remove("zoomed", "grabbing");
+    if (fsInBtn) fsInBtn.disabled = false;
+    if (fsOutBtn) fsOutBtn.disabled = true;
+  }
+
+  // Zoom toward a focal point (finger midpoint / cursor / tap) so the spot the
+  // shopper aims at stays put under their finger — the natural "zoom into here".
+  // fx/fy are screen coords; omit them to zoom about the centre of the screen.
+  // The current slide overlays the whole viewer, so the viewer centre is the
+  // slide's un-transformed (natural) centre — stable while it animates.
+  function fsZoomTo(z, fx, fy) {
+    const s = fsSlide();
+    if (!s) return;
+    const nz = Math.max(FS_MIN, Math.min(FS_MAX, z));
+    const fr = fs.getBoundingClientRect();
+    const cx = fr.left + fr.width / 2;
+    const cy = fr.top + fr.height / 2;
+    if (fx == null) { fx = cx; fy = cy; }
+    if (fsZoom > 0) {
+      fsPanX = (fx - cx) - (nz / fsZoom) * (fx - cx - fsPanX);
+      fsPanY = (fy - cy) - (nz / fsZoom) * (fy - cy - fsPanY);
+    }
+    fsZoom = nz;
+    if (fsZoom <= 1.01) { fsPanX = 0; fsPanY = 0; }
+    fsApply();
+  }
+
+  function fsLoadSlide(k) {
+    const hi = fsTrack.querySelector(`.mgfs-slide[data-si="${k}"] .mgfs-hi`);
+    if (hi && !hi.getAttribute("src")) {
+      hi.onload = () => hi.classList.add("loaded");
+      hi.onerror = () => { window.driveImgError(hi); hi.classList.add("loaded"); };
+      hi.src = hi.dataset.full;
+    }
+  }
+  function fsEnsureLoaded(i) {
+    const n = imgs.length;
+    if (!n) return;
+    new Set([(i - 1 + n) % n, i, (i + 1) % n]).forEach(fsLoadSlide);
+  }
+
+  function fsSyncThumbs() {
+    if (!fsThumbs) return;
+    fsThumbs.querySelectorAll("img").forEach((im) => {
+      const active = +im.dataset.gi === fsIdx;
+      im.classList.toggle("active", active);
+      if (active) im.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    });
+  }
+
+  function fsUpdateChrome() {
+    if (fsCounter) fsCounter.textContent = imgs.length ? `${fsIdx + 1} / ${imgs.length}` : "";
+    const many = imgs.length > 1;
+    if (fsPrevBtn) fsPrevBtn.style.display = many ? "" : "none";
+    if (fsNextBtn) fsNextBtn.style.display = many ? "" : "none";
+    if (fsThumbs) fsThumbs.style.display = many ? "" : "none";
+    fsSyncThumbs();
+  }
+
+  function fsShow(i) {
+    if (!imgs.length) return;
+    fsResetZoom();
+    fsIdx = (i + imgs.length) % imgs.length;
+    fsTrack.style.transform = `translateX(${-fsIdx * 100}%)`;
+    fsEnsureLoaded(fsIdx);
+    fsUpdateChrome();
+  }
+
+  function openFs(startIdx) {
+    if (!imgs.length) return;
+    const previews = curThumbs || [];
+    fsTrack.style.transition = "none";
+    fsTrack.innerHTML = imgs.map((src, i) => `
+      <div class="mgfs-slide" data-si="${i}">
+        ${previews[i] ? `<img class="mgfs-base" src="${previews[i]}" alt="" aria-hidden="true" draggable="false" onerror="this.remove()">` : ""}
+        <img class="mgfs-hi" alt="${(curName || 'Saree') + ' — image ' + (i + 1)}" draggable="false"
+             data-full="${src}">
+      </div>`).join("");
+    // Same thumbnail strip the card shows, so the shopper can jump straight to
+    // any image (e.g. the blouse) without swiping through them one by one.
+    if (fsThumbs) {
+      const thumbList = previews.length ? previews : imgs;
+      fsThumbs.innerHTML = thumbList.map((t, i) =>
+        `<img src="${t}" data-gi="${i}" class="${i === fsIdx ? "active" : ""}"
+          draggable="false" onerror="window.driveImgError(this)">`).join("");
+      fsThumbs.querySelectorAll("img").forEach((im) =>
+        im.addEventListener("click", (ev) => { ev.stopPropagation(); fsShow(+im.dataset.gi); }));
+    }
+
+    fsIdx = (startIdx + imgs.length) % imgs.length;
+    fsTrack.style.transform = `translateX(${-fsIdx * 100}%)`;
+    requestAnimationFrame(() => { fsTrack.style.transition = ""; });
+    fsResetZoom();
+    fsEnsureLoaded(fsIdx);
+    fsUpdateChrome();
+
+    fsOpen = true;
+    fs.classList.add("open");
+    // Add a history step so the phone Back gesture closes THIS viewer first,
+    // returning to the card it opened from (the modal stays open underneath).
+    if (!(history.state && history.state.fsOpen)) {
+      history.pushState({ fsOpen: true }, "");
+    }
+  }
+
+  function closeFs(fromPopstate) {
+    if (!fsOpen) return;
+    fsOpen = false;
+    fs.classList.remove("open");
+    fsResetZoom();
+    // Keep the card underneath in sync so its thumbnails/arrows reflect the
+    // image the shopper was last looking at full screen.
+    showSlide(fsIdx);
+    if (fromPopstate !== true && history.state && history.state.fsOpen) {
+      fsPopSuppress = true;   // swallow the popstate this back() will fire
+      history.back();
+    }
+  }
+
+  if (fsInBtn) fsInBtn.addEventListener("click", (e) => { e.stopPropagation(); fsZoomTo(fsZoom + FS_STEP); });
+  if (fsOutBtn) fsOutBtn.addEventListener("click", (e) => { e.stopPropagation(); fsZoomTo(fsZoom - FS_STEP); });
+  if (fsPrevBtn) fsPrevBtn.addEventListener("click", (e) => { e.stopPropagation(); fsShow(fsIdx - 1); });
+  if (fsNextBtn) fsNextBtn.addEventListener("click", (e) => { e.stopPropagation(); fsShow(fsIdx + 1); });
+  fs.querySelector(".mgfs-close").addEventListener("click", () => closeFs());
+
+  document.addEventListener("keydown", (e) => {
+    if (!fsOpen) return;
+    // Capture phase + stopPropagation so these keys act on the full-screen
+    // viewer only and never leak down to the card modal underneath it.
+    if (e.key === "Escape") { e.stopPropagation(); closeFs(); }
+    else if (e.key === "ArrowLeft") { e.stopPropagation(); fsShow(fsIdx - 1); }
+    else if (e.key === "ArrowRight") { e.stopPropagation(); fsShow(fsIdx + 1); }
+  }, true);
+
+  /* ---- full-screen touch: pinch-zoom, drag-to-pan, swipe, double-tap ---- */
+  const fsDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const fsMid = (a, b) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
+  let fsTStartX = null, fsTStartY = null, fsMoved = false;
+  let fsPinchDist = 0, fsPinchZoom = 1;
+  let fsPanLastX = 0, fsPanLastY = 0;
+  let fsPinching = false, fsPanning = false, fsSwiping = false;
+  let fsLastTap = 0;
+
+  fs.addEventListener("touchstart", (e) => {
+    if (e.target.closest(".mgfs-close, .mgfs-arrow, .mgfs-zoom, .mgfs-thumbs")) return;
+    fsMoved = false; fsSwiping = false;
+    if (e.touches.length === 2) {
+      fsPinching = true; fsPanning = false;
+      fsPinchDist = fsDist(e.touches[0], e.touches[1]);
+      fsPinchZoom = fsZoom;
+      fs.classList.add("grabbing");
+    } else if (e.touches.length === 1) {
+      fsTStartX = e.touches[0].clientX;
+      fsTStartY = e.touches[0].clientY;
+      if (fsZoom > 1.01) {
+        fsPanning = true;
+        fsPanLastX = e.touches[0].clientX;
+        fsPanLastY = e.touches[0].clientY;
+        fs.classList.add("grabbing");
+      }
+    }
+  }, { passive: true });
+
+  fs.addEventListener("touchmove", (e) => {
+    if (fsPinching && e.touches.length === 2) {
+      e.preventDefault();
+      fsMoved = true;
+      const m = fsMid(e.touches[0], e.touches[1]);
+      if (fsPinchDist > 0) fsZoomTo(fsPinchZoom * (fsDist(e.touches[0], e.touches[1]) / fsPinchDist), m.x, m.y);
+    } else if (fsPanning && e.touches.length === 1 && fsZoom > 1.01) {
+      e.preventDefault();
+      fsMoved = true;
+      fsPanX += e.touches[0].clientX - fsPanLastX;
+      fsPanY += e.touches[0].clientY - fsPanLastY;
+      fsPanLastX = e.touches[0].clientX;
+      fsPanLastY = e.touches[0].clientY;
+      fsApply();
+    } else if (e.touches.length === 1 && fsTStartX !== null && fsZoom <= 1.01) {
+      // Not zoomed → a horizontal drag slides between images, following the
+      // finger live so it clearly "moves" left/right, snapping on release.
+      const dx = e.touches[0].clientX - fsTStartX;
+      const dy = e.touches[0].clientY - fsTStartY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) fsMoved = true;
+      if (fsSwiping || (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy))) {
+        e.preventDefault();
+        fsSwiping = true;
+        fsTrack.style.transition = "none";
+        fsTrack.style.transform = `translateX(calc(${-fsIdx * 100}% + ${dx}px))`;
+      }
+    }
+  }, { passive: false });
+
+  fs.addEventListener("touchend", (e) => {
+    if (e.target.closest(".mgfs-close, .mgfs-arrow, .mgfs-zoom, .mgfs-thumbs")) return;
+    if (fsPinching) {
+      if (e.touches.length < 2) { fsPinching = false; fs.classList.remove("grabbing"); }
+      if (fsZoom <= 1.01) fsResetZoom();
+      fsTStartX = null;
+      return;
+    }
+    if (fsPanning) {
+      if (e.touches.length === 0) { fsPanning = false; fs.classList.remove("grabbing"); }
+      fsTStartX = null;
+      return;
+    }
+    if (fsTStartX === null) return;
+    const dx = e.changedTouches[0].clientX - fsTStartX;
+    if (fsSwiping) {
+      // Commit to the next/previous image if dragged far enough, else snap back.
+      fsSwiping = false;
+      fsTrack.style.transition = "";
+      const w = fs.getBoundingClientRect().width || window.innerWidth || 1;
+      if (Math.abs(dx) > Math.min(70, w * 0.18)) {
+        fsShow(fsIdx + (dx < 0 ? 1 : -1));
+      } else {
+        fsShow(fsIdx);   // didn't travel far enough → settle back on this image
+      }
+      fsTStartX = null;
+      return;
+    }
+    if (!fsMoved) {
+      const now = Date.now();
+      if (now - fsLastTap < 300) {
+        // Double-tap → toggle a strong zoom centred on the tapped spot.
+        const t = e.changedTouches[0];
+        fsZoomTo(fsZoom > 1.01 ? 1 : 3, t.clientX, t.clientY);
+        fsLastTap = 0;
+      } else {
+        fsLastTap = now;
+      }
+    }
+    fsTStartX = null;
+  }, { passive: false });
+
+  /* ---- full-screen desktop: pinch=zoom, two-finger horizontal swipe=navigate,
+     drag pan (when zoomed), double-click ---- */
+  const fsPager = makeWheelPager((dir) => fsShow(fsIdx + dir));
+  fs.addEventListener("wheel", (e) => {
+    if (!fsOpen) return;
+    if (e.target.closest(".mgfs-zoom, .mgfs-arrow, .mgfs-close, .mgfs-thumbs")) return;
+    // Trackpad pinch (ctrlKey) / Ctrl + wheel → zoom at the cursor.
+    if (e.ctrlKey) {
+      e.preventDefault();
+      fsZoomTo(fsZoom + (e.deltaY < 0 ? FS_STEP / 2 : -FS_STEP / 2), e.clientX, e.clientY);
+      return;
+    }
+    // Not zoomed + a mostly-horizontal two-finger swipe → move between images.
+    if (fsZoom <= 1.01 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault();
+      fsPager(e.deltaX);
+    }
+  }, { passive: false });
+
+  fs.addEventListener("dblclick", (e) => {
+    if (e.target.closest(".mgfs-arrow, .mgfs-zoom, .mgfs-close")) return;
+    fsZoomTo(fsZoom > 1.01 ? 1 : 3, e.clientX, e.clientY);
+  });
+
+  fs.addEventListener("dragstart", (e) => e.preventDefault());
+
+  let fsMouseDown = false, fsMouseLastX = 0, fsMouseLastY = 0;
+  fs.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "touch" || fsZoom <= 1.01) return;
+    if (e.target.closest(".mgfs-arrow, .mgfs-zoom, .mgfs-close")) return;
+    e.preventDefault();
+    fsMouseDown = true; fsMouseLastX = e.clientX; fsMouseLastY = e.clientY;
+    fs.classList.add("grabbing");
+    try { fs.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  fs.addEventListener("pointermove", (e) => {
+    if (!fsMouseDown) return;
+    e.preventDefault();
+    fsPanX += e.clientX - fsMouseLastX;
+    fsPanY += e.clientY - fsMouseLastY;
+    fsMouseLastX = e.clientX; fsMouseLastY = e.clientY;
+    fsApply();
+  });
+  const fsEndMouse = () => { fsMouseDown = false; fs.classList.remove("grabbing"); };
+  fs.addEventListener("pointerup", fsEndMouse);
+  fs.addEventListener("pointercancel", fsEndMouse);
+  fs.addEventListener("pointerleave", fsEndMouse);
 
   window.openGallery = openGallery;
   window.closeGallery = closeGallery;
